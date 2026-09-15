@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Triad Dashboard</title>
+<style>
+  body { font-family: monospace; background: #0d1117; color: #c9d1d9; margin: 2em; }
+  h1 { color: #58a6ff; }
+  pre { background: #161b22; padding: 1em; overflow: auto; border-radius: 6px; }
+  .row { display: flex; gap: 1em; flex-wrap: wrap; }
+  .card { flex: 1 1 300px; }
+</style>
+</head>
+<body>
+<h1>Triad Dashboard</h1>
+<div class="row">
+  <div class="card"><h2>Stats (/stats)</h2><pre id="stats">loading…</pre></div>
+  <div class="card"><h2>State (/state)</h2><pre id="state">loading…</pre></div>
+</div>
+<h2>Logs (/logs, last 20)</h2>
+<pre id="logs">loading…</pre>
+<script>
+async function load(id, path) {
+  try {
+    const r = await fetch(path);
+    const j = await r.json();
+    document.getElementById(id).textContent = JSON.stringify(j, null, 2);
+  } catch (e) {
+    document.getElementById(id).textContent = "error: " + e;
+  }
+}
+load("stats", "/stats");
+load("state", "/state");
+load("logs", "/logs");
+setInterval(() => { load("stats", "/stats"); load("state", "/state"); load("logs", "/logs"); }, 10000);
+</script>
+</body>
+</html>
