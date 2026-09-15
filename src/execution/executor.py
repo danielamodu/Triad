@@ -1,0 +1,151 @@
+"""Order execution via bgc, always with --paper-trading.
+
+Decision map:
+  LONG_RTOKEN  -> spot market BUY  RTOKEN_SYMBOL (qty in USDT)
+  HEDGE_CRYPTO -> spot market SELL CRYPTO_SYMBOL (trim crypto exposure)
+  EXIT         -> spot market SELL RTOKEN_SYMBOL (close rToken leg)
+  HOLD         -> no-op
+"""
+import config
+from src import cli
+
+# ── Confidence-based position sizing ─────────────────────────────
+# confidence > 0.8  -> $1000
+# confidence 0.6-0.8 -> $500
+# confidence < 0.6  -> skip (LOW_CONFIDENCE_SKIP)
+SIZE_HIGH_CONF = 1000.0
+SIZE_MID_CONF = 500.0
+HIGH_CONF_T = 0.8
+MID_CONF_T = 0.6
+
+
+def size_for_confidence(confidence) -> float:
+    """Map decision confidence -> position size in USD.
+
+    Returns 1000.0 / 500.0 / 0.0 (0.0 means skip). Never raises.
+    """
+    try:
+        conf = float(confidence)
+    except (TypeError, ValueError):
+        return 0.0
+    if conf > HIGH_CONF_T:
+        return SIZE_HIGH_CONF
+    if conf >= MID_CONF_T:
+        return SIZE_MID_CONF
+    return 0.0
+
+
+def _base_coin(symbol: str) -> str:
+    return symbol.upper().replace("USDT", "").replace("USDC", "")
+
+
+def get_positions() -> dict:
+    """Paper UTA balances -> {SYMBOL: {"usd": float}}. Only tracks the
+    Triad universe (rToken + crypto legs).
+
+    A "__ok": True key marks a successful broker snapshot so callers can
+    tell "empty account" apart from "broker call failed" (which returns
+    {}). Dunder keys are account metadata, not positions: strip them
+    before treating the dict as a position book."""
+    book: dict = {}
+    try:
+        data = cli._run("account_overview")
+    except Exception:
+        return book
+    assets = []
+    if isinstance(data, dict):
+        node = data.get("assets", {})
+        if isinstance(node, dict):
+            inner = node.get("data", node)
+            if isinstance(inner, dict):
+                assets = inner.get("assets", []) or []
+    for leg in (config.RTOKEN_SYMBOL, config.CRYPTO_SYMBOL):
+        base = _base_coin(leg)
+        for row in assets:
+            if not isinstance(row, dict):
+                continue
+            if str(row.get("coin", "")).upper() == base:
+                try:
+                    book[leg] = {"usd": float(row.get("usdValue", 0) or 0),
+                                 "pnl_pct": 0.0}
+                except (TypeError, ValueError):
+                    pass
+    book["__ok"] = True
+    return book
+
+
+def _qty_precision(symbol: str) -> int:
+    """Exchange quantity decimals for a SPOT symbol (default 6)."""
+    try:
+        rows = cli.as_list(cli._run("market", "--action", "instruments",
+                                     "--category", config.SPOT_CATEGORY,
+                                     "--symbol", symbol))
+        row = next((r for r in rows if isinstance(r, dict)
+                    and str(r.get("symbol", "")).upper() == symbol.upper()),
+                   rows[0] if rows else {})
+        return max(0, int(float(row.get("quantityPrecision", 6))))
+    except Exception:
+        return 6
+
+
+def _sell_qty_base(symbol: str, notional_usdt: float) -> str:
+    from decimal import Decimal, ROUND_DOWN
+    rows = cli.tickers(config.SPOT_CATEGORY, symbol)
+    row = next((r for r in rows if isinstance(r, dict)
+                and str(r.get("symbol", "")).upper() == symbol.upper()),
+               rows[0] if rows else {})
+    last = cli.fnum(row.get("lastPrice", row.get("last", 0)))
+    if last <= 0:
+        raise cli.BgcError(f"cannot size SELL {symbol}: no last price")
+    precision = _qty_precision(symbol)
+    qty = (Decimal(str(notional_usdt)) / Decimal(str(last))).quantize(
+        Decimal(1).scaleb(-precision), rounding=ROUND_DOWN)
+    if qty <= 0:
+        raise cli.BgcError(f"sized SELL {symbol} rounds to zero")
+    return format(qty, "f")
+
+
+def execute(decision: dict, symbol: str) -> dict:
+    """Execute an approved decision. Returns {executed, order_id, details}.
+
+    Confidence sizing: >0.8 -> $1000, 0.6-0.8 -> $500, <0.6 -> skip
+    with details "LOW_CONFIDENCE_SKIP".
+    """
+    name = str((decision or {}).get("decision", "HOLD")).upper()
+    symbol = (symbol or "").upper()
+    if name == "HOLD" or not symbol:
+        return {"executed": False, "order_id": "",
+                "details": "HOLD: nothing to do"}
+
+    size = size_for_confidence((decision or {}).get("confidence", 0))
+    if size <= 0:
+        return {"executed": False, "order_id": "",
+                "details": "LOW_CONFIDENCE_SKIP",
+                "symbol": symbol, "side": "",
+                "notional_usdt": 0.0, "position_size_usd": 0.0,
+                "confidence": (decision or {}).get("confidence", 0)}
+    notional = min(config.RISK_MAX_POSITION_USD, size)
+    side = ""
+    try:
+        if name == "LONG_RTOKEN":
+            side = "buy"
+            data = cli.place_order(config.SPOT_CATEGORY, symbol, "buy",
+                                   "market", str(notional), dry_run=False)
+        elif name in ("HEDGE_CRYPTO", "EXIT"):
+            side = "sell"
+            qty = _sell_qty_base(symbol, notional)
+            data = cli.place_order(config.SPOT_CATEGORY, symbol, "sell",
+                                   "market", qty, dry_run=False)
+        else:
+            return {"executed": False, "order_id": "",
+                    "details": f"unknown decision {name}"}
+    except Exception as exc:
+        return {"executed": False, "order_id": "",
+                "details": f"execution failed: {exc}"[:300]}
+
+    order_id = ""
+    if isinstance(data, dict):
+        order_id = str(data.get("orderId", ""))
+    return {"executed": bool(order_id), "order_id": order_id,
+            "details": data, "symbol": symbol, "side": side,
+            "notional_usdt": notional, "position_size_usd": notional}
