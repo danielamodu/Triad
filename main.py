@@ -149,11 +149,20 @@ def _sync_positions(action_taken: dict, price_signal: dict,
                 notional = 0.0
             if not symbol or notional <= 0:
                 continue
+            # Prefer the broker's fill price; fall back to the signal's
+            # last price when the fill fetch failed (paper gaps, BTC leg
+            # fills while rToken legs reject). current_price stays the
+            # live mark either way.
+            try:
+                fill_price = float(leg.get("fill_price", 0) or 0)
+            except (TypeError, ValueError):
+                fill_price = 0.0
             current = _current_price(symbol, price_signal)
+            entry_price = fill_price if fill_price > 0 else current
             if side == "buy":
                 OPEN_POSITIONS[symbol] = {
                     "symbol": symbol, "side": "long",
-                    "size_usd": notional, "entry_price": current,
+                    "size_usd": notional, "entry_price": entry_price,
                     "current_price": current, "pnl": 0.0,
                     "usd": notional}
             elif side == "sell":
@@ -163,7 +172,7 @@ def _sync_positions(action_taken: dict, price_signal: dict,
                 else:
                     OPEN_POSITIONS[symbol] = {
                         "symbol": symbol, "side": "short",
-                        "size_usd": notional, "entry_price": current,
+                        "size_usd": notional, "entry_price": entry_price,
                         "current_price": current, "pnl": 0.0,
                         "usd": notional}
     except Exception:
@@ -197,6 +206,32 @@ def _executed_notional(action_taken: dict) -> float:
         return 0.0
 
 
+def _action_fees(action_taken: dict) -> float:
+    """Total broker fees (USD-ish) reported by executed legs. Never raises."""
+    try:
+        if not isinstance(action_taken, dict):
+            return 0.0
+        details = action_taken.get("details")
+        if isinstance(details, list):
+            legs = [leg for leg in details if isinstance(leg, dict)
+                    and leg.get("executed")]
+        elif isinstance(details, dict) and details.get("executed"):
+            legs = [details]
+        elif action_taken.get("executed"):
+            legs = [action_taken]
+        else:
+            return 0.0
+        total = 0.0
+        for leg in legs:
+            try:
+                total += float(leg.get("fee_usd", 0) or 0)
+            except (TypeError, ValueError):
+                continue
+        return round(total, 6)
+    except Exception:
+        return 0.0
+
+
 def safe(stage: str, fn, *args, fallback):
     try:
         return fn(*args)
@@ -204,8 +239,12 @@ def safe(stage: str, fn, *args, fallback):
         return {**fallback, "reason": f"{stage} failed: {exc}"[:200]}
 
 
-def tick() -> dict:
-    """One full pass. Returns a summary dict (also logged)."""
+def tick(live: bool = False) -> dict:
+    """One full pass. Returns a summary dict (also logged).
+
+    live=True trades the LIVE account and must only come from main()'s
+    --live gate; the mode is recorded on every log entry.
+    """
     price = safe("price", get_divergence, fallback={
         "signal": "STABLE", "direction": "FLAT", "divergence_score": 0.0,
         "rtoken_change": 0.0, "crypto_change": 0.0})
@@ -230,7 +269,7 @@ def tick() -> dict:
     risk_state.roll_day(rstate, today, pre_pnl)
 
     try:
-        account = get_positions()
+        account = get_positions(paper=not live)
     except Exception as exc:
         account = {"__error": str(exc)[:160]}
     broker_ok = (isinstance(account, dict)
@@ -309,7 +348,7 @@ def tick() -> dict:
                     legs.append(execute({"decision": risk["decision"],
                                          "confidence": decision.get(
                                              "confidence", 0)},
-                                        symbol))
+                                        symbol, live=live))
         except Exception as exc:
             legs.append({"executed": False, "order_id": "",
                          "details": f"executor crashed: {exc}"[:200]})
@@ -328,6 +367,7 @@ def tick() -> dict:
     running_pnl = _running_pnl()
     memory_summary = _memory_context(3)
     executed_notional_usd = _executed_notional(action_taken)
+    fees_usd = _action_fees(action_taken)
 
     # Fold fills into the persisted ledger (blocks/skips change nothing).
     risk_state.record_fills(rstate, action_taken)
@@ -346,7 +386,9 @@ def tick() -> dict:
              "running_pnl": running_pnl,
              "position_size_usd": position_size_usd,
              "executed_notional_usd": executed_notional_usd,
+             "fees_usd": fees_usd,
              "drawdown_pct": round(drawdown, 6),
+             "mode": "live" if live else "paper",
              "memory_summary": memory_summary,
              "reasoning": decision.get("reasoning", "")}
     try:
@@ -355,18 +397,20 @@ def tick() -> dict:
         traceback.print_exc()
 
     _push_memory(decision, action_taken, running_pnl)
-    _print_status(price, event, sentiment, decision, risk, action_taken)
+    _print_status(price, event, sentiment, decision, risk, action_taken,
+                  live)
     return {"diverged": price.get("signal") == "DIVERGENCE_DETECTED",
             "decision": decision.get("decision"),
             "executed": bool(action_taken.get("executed"))}
 
 
-def _print_status(price, event, sentiment, decision, risk, action_taken) -> None:
+def _print_status(price, event, sentiment, decision, risk, action_taken,
+                  live: bool = False) -> None:
     bar = "=" * 64
     print(f"\n{bar}")
     print(f"  TRIAD tick "
           f"| {config.RTOKEN_SYMBOL}/{config.CRYPTO_SYMBOL} "
-          f"| paper only")
+          f"| {'LIVE' if live else 'paper'}")
     print(f"  price     : {price.get('signal')} "
           f"{price.get('direction')} gap={price.get('divergence_score'):+.3%} "
           f"(r {price.get('rtoken_change'):+.2%} / "
@@ -393,9 +437,18 @@ def _print_status(price, event, sentiment, decision, risk, action_taken) -> None
 def main() -> int:
     parser = argparse.ArgumentParser(description="Triad execution agent")
     parser.add_argument("--once", action="store_true")
+    parser.add_argument("--live", action="store_true",
+                        help="trade the LIVE account (needs TRIAD_LIVE_OK=1 "
+                             "and no logs/KILL file; otherwise refused)")
     args = parser.parse_args()
 
-    print(f"[triad] key={config.masked_key()} rtoken={config.RTOKEN_SYMBOL} "
+    live, live_reason = config.live_trading_enabled(args.live)
+    if args.live and not live:
+        print(f"[triad] FATAL: {live_reason}", flush=True)
+        return 2
+
+    print(f"[triad] mode={'LIVE' if live else 'paper'} "
+          f"key={config.masked_key()} rtoken={config.RTOKEN_SYMBOL} "
           f"crypto={config.CRYPTO_SYMBOL} interval={config.HEARTBEAT_INTERVAL}s",
           flush=True)
     if not config.has_credentials():
@@ -410,7 +463,7 @@ def main() -> int:
     last_tick = 0.0
     while True:
         try:
-            summary = tick()
+            summary = tick(live=live)
         except Exception:
             traceback.print_exc()
             try:
@@ -422,7 +475,9 @@ def main() -> int:
                             "running_pnl": _running_pnl(),
                             "position_size_usd": 0.0,
                             "executed_notional_usd": 0.0,
+                            "fees_usd": 0.0,
                             "drawdown_pct": 0.0,
+                            "mode": "live" if live else "paper",
                             "memory_summary": _memory_context(3),
                             "reasoning": traceback.format_exc()[-500:]})
             except Exception:

@@ -29,6 +29,32 @@ CRYPTO_SYMBOL = "BTCUSDT"
 SPOT_CATEGORY = "SPOT"
 FUTURES_CATEGORY = "USDT-FUTURES"
 
+# ── Trading mode ─────────────────────────────────────────────────
+# Paper is the default and only path unless ALL three hold:
+#   1. main.py --live flag,  2. TRIAD_LIVE_OK=1 in the environment,
+#   3. no logs/KILL file. Missing any one -> paper (or refusal, if
+#      --live was explicitly requested; see live_trading_enabled).
+TRIAD_LIVE_OK = os.environ.get("TRIAD_LIVE_OK", "").strip() == "1"
+
+
+def live_trading_enabled(cli_live_flag: bool) -> tuple:
+    """Resolve whether this run may trade live. Returns (live, reason).
+
+    live is True only when the --live flag, TRIAD_LIVE_OK=1, and no KILL
+    file all hold. reason explains a refusal ("" when live). Never raises.
+    """
+    try:
+        if not cli_live_flag:
+            return False, ""
+        if os.path.exists(KILL_FILE):
+            return False, "refusing live: KILL file present"
+        if not TRIAD_LIVE_OK:
+            return False, ("refusing live: --live given without "
+                           "TRIAD_LIVE_OK=1")
+        return True, ""
+    except Exception as exc:
+        return False, f"refusing live: gate error: {exc}"[:160]
+
 # ── Logging ──────────────────────────────────────────────────────
 LOG_FILE = "logs/trades.jsonl"
 KILL_FILE = os.path.join(BASE_DIR, "logs", "KILL")  # create to halt trading

@@ -33,6 +33,21 @@ python main.py --once   # single tick (testing)
 python main.py          # loop: 300s sleep, instant wake on divergence
 ```
 
+## Live mode (real money — triple-gated)
+
+Paper is the default. Live requires ALL three, otherwise the run is
+refused before any trading:
+
+```powershell
+$env:TRIAD_LIVE_OK="1"                  # 2nd key (in addition to --live)
+python main.py --live                   # 1st key; 3rd key = no logs/KILL file
+```
+
+Every order carries a `triad-` client ID and, once filled, the order
+detail is fetched: legs book the broker's `avgPrice` and fee (signal
+price is the fallback), and each log entry records `mode`, `fees_usd`,
+and intended vs executed size.
+
 ## Decisions
 
 `LONG_RTOKEN` (vote ≥ +0.30) · `HEDGE_CRYPTO` (≤ −0.30) ·

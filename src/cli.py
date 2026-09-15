@@ -3,6 +3,11 @@
 All parsing is defensive: unexpected shapes degrade to exceptions with
 the raw payload attached, and signal modules convert those into a
 neutral score instead of trading blind.
+
+Trading mode: writes go to the Bitget demo environment when paper=True
+(`--paper-trading` flag) and to the LIVE account when paper=False.
+Reads are unaffected. Every write helper defaults to paper=True; live
+must be explicitly threaded through from main.py's --live gate.
 """
 import json
 import shlex
@@ -15,11 +20,18 @@ class BgcError(RuntimeError):
     pass
 
 
-def _run(*argv: str, timeout: int = 30) -> dict:
-    """Run `bgc <argv...> --paper-trading` and return the `data` payload."""
+def _run(*argv: str, timeout: int = 30, paper: bool = True) -> dict:
+    """Run `bgc <argv...>` and return the `data` payload.
+
+    paper=True appends `--paper-trading` (demo). paper=False omits it,
+    routing writes to the LIVE account -- only reachable via the --live
+    gate in main.py.
+    """
     import shutil
     bgc = shutil.which("bgc") or "bgc"
-    cmd = [bgc, *argv, "--paper-trading"]
+    cmd = [bgc, *argv]
+    if paper:
+        cmd.append("--paper-trading")
     # NOTE: pass a list (never a pre-quoted string): with shell=True
     # Python applies Windows-correct quoting itself. shlex.quote emits
     # POSIX single-quotes that cmd.exe rejects.
@@ -115,20 +127,24 @@ def open_interest(category: str, symbol: str = "") -> list:
 
 # ── Trading (execution module) ───────────────────────────────────
 def place_order(category: str, symbol: str, side: str, order_type: str,
-                qty: str, dry_run: bool = False) -> dict:
+                qty: str, dry_run: bool = False, paper: bool = True,
+                client_oid: str = "") -> dict:
     args = ["order", "--action", "place", "--category", category,
             "--symbol", symbol, "--side", side, "--orderType", order_type,
             "--qty", qty]
+    if client_oid:
+        args += ["--clientOid", client_oid]
     if dry_run:
         args.append("--dry-run")
     else:
         args.append("--confirm")
-    data = _run(*args, timeout=30)
+    data = _run(*args, timeout=30, paper=paper)
     if isinstance(data, dict):
         return data
     return {"result": data}
 
 
-def get_order(order_id: str) -> dict:
-    data = _run("order", "--action", "detail", "--orderId", order_id)
+def get_order(order_id: str, paper: bool = True) -> dict:
+    data = _run("order", "--action", "detail", "--orderId", order_id,
+                paper=paper)
     return data if isinstance(data, dict) else {"result": data}
