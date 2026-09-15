@@ -22,7 +22,8 @@ def _quiet_tick(monkeypatch, tmp_path, decide_result, execute_result=None):
     monkeypatch.setattr(main, "get_sentiment",
                         lambda: {"sentiment": "neutral", "score": 0.5})
     monkeypatch.setattr(main, "get_positions", lambda **kw: {"__ok": True})
-    monkeypatch.setattr(main, "decide", lambda signals, pos, mem: decide_result)
+    monkeypatch.setattr(main, "decide",
+                        lambda signals, pos, mem, **kw: decide_result)
     if execute_result is not None:
         monkeypatch.setattr(main, "execute",
                             lambda dec, sym, **kw: dict(execute_result))
@@ -107,7 +108,7 @@ def test_tick_halts_after_repeated_broker_failures(monkeypatch, tmp_path):
                         lambda: {"sentiment": "neutral", "score": 0.5})
     monkeypatch.setattr(main, "get_positions", lambda **kw: {})  # outage
     monkeypatch.setattr(main, "decide",
-                        lambda s, p, m: {"decision": "LONG_RTOKEN",
+                        lambda s, p, m, **kw: {"decision": "LONG_RTOKEN",
                                          "confidence": 0.9, "reasoning": "t",
                                          "scores": {}, "engine_used": "test"})
     monkeypatch.setattr(main, "execute",

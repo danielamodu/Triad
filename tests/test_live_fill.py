@@ -204,7 +204,7 @@ def _live_tick(monkeypatch, tmp_path, live):
                         lambda: {"sentiment": "neutral", "score": 0.5})
     monkeypatch.setattr(main, "get_positions", lambda **kw: {"__ok": True})
     monkeypatch.setattr(main, "decide",
-                        lambda s, p, m: {"decision": "HOLD", "confidence": 0.0,
+                        lambda s, p, m, **kw: {"decision": "HOLD", "confidence": 0.0,
                                          "reasoning": "t", "scores": {},
                                          "engine_used": "test"})
     captured = {}
@@ -247,7 +247,7 @@ def test_tick_threads_live_into_broker_and_executor(monkeypatch, tmp_path):
         return {"__ok": True}
     monkeypatch.setattr(main, "get_positions", fake_positions)
     monkeypatch.setattr(main, "decide",
-                        lambda s, p, m: {"decision": "LONG_RTOKEN",
+                        lambda s, p, m, **kw: {"decision": "LONG_RTOKEN",
                                          "confidence": 0.9, "reasoning": "t",
                                          "scores": {}, "engine_used": "test"})
     def fake_execute(dec, sym, **kw):
