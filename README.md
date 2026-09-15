@@ -70,8 +70,17 @@ Weights: price_divergence 0.5, event 0.3, sentiment 0.2.
 6. Logs scrub credential-shaped fields. Each entry records intended
    (`position_size_usd`) vs actually filled (`executed_notional_usd`)
    size plus the current `drawdown_pct`.
-7. `python -m pytest tests` — 30 tests covering ledger math, cage gates,
-   and tick wiring.
+7. Pre-trade validation blocks unlisted/offline symbols, sub-minimum
+   sizes, insufficient balances, and >1% price drift since the signal —
+   before any order is placed.
+8. Order settlement: one retry on retryable errors (same `triad-`
+   client ID, so no duplicates); partial fills cancel the remainder and
+   book what filled; broker-confirmed zero fills report NO_FILL.
+9. Boot reconciles from the broker: unknown balances are adopted into
+   tracking and seeded into the ledger (never the reverse); resting
+   orders are reported, never touched.
+10. `python -m pytest tests` — 61 tests covering ledger math, cage gates,
+    live routing, validation, settlement, startup, and tick wiring.
 
 ## Notes
 

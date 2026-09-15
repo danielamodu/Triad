@@ -148,3 +148,26 @@ def get_order(order_id: str, paper: bool = True) -> dict:
     data = _run("order", "--action", "detail", "--orderId", order_id,
                 paper=paper)
     return data if isinstance(data, dict) else {"result": data}
+
+
+def cancel_order(order_id: str, symbol: str = "",
+                 category: str = "SPOT", paper: bool = True) -> dict:
+    """Best-effort cancel of one order. Callers must tolerate failure."""
+    args = ["order", "--action", "cancel", "--category", category]
+    if symbol:
+        args += ["--symbol", symbol]
+    args += ["--orderId", order_id, "--confirm"]
+    data = _run(*args, timeout=30, paper=paper)
+    return data if isinstance(data, dict) else {"result": data}
+
+
+def open_orders(category: str = "SPOT", symbol: str = "",
+                paper: bool = True) -> list:
+    """List resting open orders (empty when nothing rests). Never raises."""
+    try:
+        args = ["order", "--action", "open", "--category", category]
+        if symbol:
+            args += ["--symbol", symbol]
+        return as_list(_run(*args, paper=paper))
+    except Exception:
+        return []

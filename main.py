@@ -143,8 +143,11 @@ def _sync_positions(action_taken: dict, price_signal: dict,
         for leg in legs:
             symbol = str(leg.get("symbol", "")).upper()
             side = str(leg.get("side", "")).lower()
+            # Book what actually filled (partials!), falling back to the
+            # intended notional when no fill data is present.
             try:
-                notional = float(leg.get("notional_usdt", 0) or 0)
+                notional = float(leg.get("fill_value", 0)
+                                 or leg.get("notional_usdt", 0) or 0)
             except (TypeError, ValueError):
                 notional = 0.0
             if not symbol or notional <= 0:
@@ -237,6 +240,109 @@ def safe(stage: str, fn, *args, fallback):
         return fn(*args)
     except Exception as exc:
         return {**fallback, "reason": f"{stage} failed: {exc}"[:200]}
+
+
+# Balances below this are dust: left alone, never adopted, never traded.
+_RECONCILE_DUST_USD = 1.0
+
+
+def reconcile_startup(live: bool) -> dict:
+    """Resume-from-broker: adopt live balances into tracking on boot.
+
+    Compares the broker snapshot against the persisted ledger and the
+    (always empty at boot) in-memory book. Broker balances above dust
+    with no tracked leg are adopted as long legs at the current mark
+    and seeded into the ledger (max of ledger/broker, so a restart can
+    only tighten the no-doubling gate, never loosen it). Resting open
+    orders are reported, never touched.
+
+    In-memory state from a previous process is never trusted: this is
+    the only writer of OPEN_POSITIONS outside tick fills. Returns a
+    report dict; prints it. Never raises.
+    """
+    report: dict = {"mode": "live" if live else "paper", "adopted": [],
+                    "open_orders": [], "warnings": []}
+    try:
+        price = safe("price", get_divergence, fallback={
+            "signal": "STABLE", "direction": "FLAT", "divergence_score": 0.0,
+            "rtoken_change": 0.0, "crypto_change": 0.0})
+    except Exception:
+        price = {}
+    try:
+        rstate, state_ok = risk_state.load_state()
+        if not state_ok:
+            report["warnings"].append(
+                "risk state unreadable at startup; starting fresh ledger "
+                "(verify the broker is flat before trading)")
+            rstate = risk_state.fresh_state()
+    except Exception:
+        rstate, state_ok = risk_state.fresh_state(), True
+    try:
+        account = get_positions(paper=not live)
+        broker_ok = (isinstance(account, dict)
+                     and account.get("__ok", False) is True)
+    except Exception:
+        account, broker_ok = {}, False
+    if not broker_ok:
+        report["warnings"].append("broker snapshot failed at startup; "
+                                  "positions unknown until ticks succeed")
+        account = {}
+    try:
+        opens = cli.open_orders(config.SPOT_CATEGORY, paper=not live)
+        for row in opens if isinstance(opens, list) else []:
+            if isinstance(row, dict):
+                report["open_orders"].append(
+                    {k: row.get(k) for k in
+                     ("orderId", "symbol", "side", "qty", "orderStatus")})
+        if report["open_orders"]:
+            report["warnings"].append(
+                f"{len(report['open_orders'])} resting open order(s): "
+                "left untouched, review manually")
+    except Exception:
+        pass
+    try:
+        exposure = rstate.setdefault("exposure", {})
+        for symbol in (config.RTOKEN_SYMBOL, config.CRYPTO_SYMBOL):
+            try:
+                usd = float((account.get(symbol, {}) or {}).get("usd", 0)
+                            or 0)
+            except (TypeError, ValueError):
+                usd = 0.0
+            if usd < _RECONCILE_DUST_USD or symbol in OPEN_POSITIONS:
+                continue
+            mark = _current_price(symbol, price)
+            OPEN_POSITIONS[symbol] = {
+                "symbol": symbol, "side": "long",
+                "size_usd": round(usd, 4), "entry_price": mark,
+                "current_price": mark, "pnl": 0.0, "usd": round(usd, 4),
+                "reconciled": True}
+            try:
+                prior = float(exposure.get(symbol, 0.0) or 0.0)
+            except (TypeError, ValueError):
+                prior = 0.0
+            if usd > prior:
+                exposure[symbol] = round(usd, 4)
+            report["adopted"].append({"symbol": symbol,
+                                      "usd": round(usd, 4),
+                                      "ledger_was": round(prior, 4)})
+        total = sum(abs(v) for v in exposure.values()
+                    if isinstance(v, (int, float)))
+        if total > float(rstate.get("peak_exposure_usd", 0.0) or 0.0):
+            rstate["peak_exposure_usd"] = round(float(total), 4)
+        global _STATE_SAVE_OK
+        if not risk_state.save_state(rstate):
+            _STATE_SAVE_OK = False
+            report["warnings"].append(
+                "risk state save failed at startup; cage fails closed")
+    except Exception as exc:
+        report["warnings"].append(f"reconcile error: {exc}"[:160])
+    print(f"[triad] reconcile ({report['mode']}): "
+          f"{len(report['adopted'])} adopted, "
+          f"{len(report['open_orders'])} open orders, "
+          f"{len(report['warnings'])} warnings.", flush=True)
+    for warning in report["warnings"]:
+        print(f"[triad] reconcile warning: {warning}", flush=True)
+    return report
 
 
 def tick(live: bool = False) -> dict:
@@ -348,7 +454,9 @@ def tick(live: bool = False) -> dict:
                     legs.append(execute({"decision": risk["decision"],
                                          "confidence": decision.get(
                                              "confidence", 0)},
-                                        symbol, live=live))
+                                        symbol, live=live,
+                                        ref_price=_current_price(
+                                            symbol, price)))
         except Exception as exc:
             legs.append({"executed": False, "order_id": "",
                          "details": f"executor crashed: {exc}"[:200]})
@@ -459,6 +567,11 @@ def main() -> int:
     except Exception as exc:
         print(f"[triad] FATAL: bgc CLI unusable: {exc}", flush=True)
         return 2
+
+    # Resume-from-broker before the first tick: adopt live balances,
+    # report resting orders. Never resumes in-memory state (there is
+    # none: a fresh process starts with empty books by construction).
+    reconcile_startup(live)
 
     last_tick = 0.0
     while True:

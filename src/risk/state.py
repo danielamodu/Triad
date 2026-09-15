@@ -111,8 +111,11 @@ def iter_fills(action_taken: dict):
         for leg in legs:
             symbol = str(leg.get("symbol", "")).upper()
             side = str(leg.get("side", "")).lower()
+            # Book what actually filled (partials!), falling back to the
+            # intended notional on old log shapes without fill data.
             try:
-                notional = float(leg.get("notional_usdt", 0) or 0)
+                notional = float(leg.get("fill_value", 0)
+                                 or leg.get("notional_usdt", 0) or 0)
             except (TypeError, ValueError):
                 notional = 0.0
             if not symbol or notional <= 0:
