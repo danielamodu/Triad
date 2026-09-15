@@ -21,11 +21,11 @@ def _quiet_tick(monkeypatch, tmp_path, decide_result, execute_result=None):
                         lambda: {"signal": "NEUTRAL", "confidence": 0.5})
     monkeypatch.setattr(main, "get_sentiment",
                         lambda: {"sentiment": "neutral", "score": 0.5})
-    monkeypatch.setattr(main, "get_positions", lambda: {"__ok": True})
+    monkeypatch.setattr(main, "get_positions", lambda **kw: {"__ok": True})
     monkeypatch.setattr(main, "decide", lambda signals, pos, mem: decide_result)
     if execute_result is not None:
         monkeypatch.setattr(main, "execute",
-                            lambda dec, sym: dict(execute_result))
+                            lambda dec, sym, **kw: dict(execute_result))
     captured = {}
     monkeypatch.setattr(main, "append_log",
                         lambda entry: captured.update(entry) or "mock-path")
@@ -105,13 +105,13 @@ def test_tick_halts_after_repeated_broker_failures(monkeypatch, tmp_path):
                         lambda: {"signal": "NEUTRAL", "confidence": 0.5})
     monkeypatch.setattr(main, "get_sentiment",
                         lambda: {"sentiment": "neutral", "score": 0.5})
-    monkeypatch.setattr(main, "get_positions", lambda: {})  # no __ok: outage
+    monkeypatch.setattr(main, "get_positions", lambda **kw: {})  # outage
     monkeypatch.setattr(main, "decide",
                         lambda s, p, m: {"decision": "LONG_RTOKEN",
                                          "confidence": 0.9, "reasoning": "t",
                                          "scores": {}, "engine_used": "test"})
     monkeypatch.setattr(main, "execute",
-                        lambda dec, sym: {"executed": True, "order_id": "x",
+                        lambda dec, sym, **kw: {"executed": True, "order_id": "x",
                                           "symbol": sym, "side": "buy",
                                           "notional_usdt": 1000.0,
                                           "details": {"symbol": sym,
