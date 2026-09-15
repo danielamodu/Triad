@@ -11,3 +11,6 @@ logs/*.jsonl
 logs/risk_state.json
 logs/risk_state.json.tmp
 logs/KILL
+
+# Backtest cache + reports (regenerate with python -m backtest.harness)
+backtest/data/

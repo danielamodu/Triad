@@ -48,6 +48,25 @@ detail is fetched: legs book the broker's `avgPrice` and fee (signal
 price is the fallback), and each log entry records `mode`, `fees_usd`,
 and intended vs executed size.
 
+## Backtest (offline, deterministic)
+
+```powershell
+python -m backtest.harness            # cached candles, current thresholds
+python -m backtest.harness --refresh  # refetch 1D candles (RAAPL/BTC, ~90d)
+python -m backtest.harness --sweep    # also try alternate sizing cutoffs
+```
+
+Replays daily candles through the real scorer, sizing, and cage
+(Groq excluded — non-deterministic; event/sentiment fixed neutral).
+Fills at close, 0.1%/side. Latest 89-day run: 5 trades, 40% win rate,
+profit factor 2.41, +$80 vs +$114 buy-and-hold; high-confidence bucket
+3 trades +$101, mid bucket 2 trades −$38. n=5 is far too thin to tune
+on — directionally supportive of the 0.6/0.8 cuts, nothing more.
+
+Two real bugs found by the harness and fixed: the fallback scorer
+halved crypto-outperformance votes so HEDGE could never fire on price
+alone (roach motel), and PnL halts blocked exits, trapping positions.
+
 ## Decisions
 
 `LONG_RTOKEN` (vote ≥ +0.30) · `HEDGE_CRYPTO` (≤ −0.30) ·
