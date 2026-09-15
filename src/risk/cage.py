@@ -5,13 +5,17 @@ Rules:
      on BOT-OPENED exposure only (persisted risk state; log replay is the
      fallback when no state is supplied). Pre-existing funding is
      baseline, not bot risk.
-  2. Halt ALL trading if drawdown > RISK_MAX_DRAWDOWN_PCT (default 5%).
+  2. Halt new entries if drawdown > RISK_MAX_DRAWDOWN_PCT (default 5%).
      Drawdown is peak-to-current running_pnl over
-     max(RISK_MAX_POSITION_USD, peak deployed exposure).
-  3. Halt ALL trading for the rest of the UTC day if the daily loss
-     exceeds RISK_MAX_DAILY_LOSS_PCT (default 2%).
-  4. Fail closed: unreadable risk state or a sustained broker-snapshot
-     outage blocks everything (no fail-open).
+     max(RISK_MAX_POSITION_USD, peak deployed exposure). Exits always
+     pass: a halt must never trap a position by blocking the way out
+     (found by backtest, 2026-09-15: halts blocked HEDGE/EXIT while an
+     open leg bled, bricking the bot until recovery).
+  3. Halt new entries for the rest of the UTC day if the daily loss
+     exceeds RISK_MAX_DAILY_LOSS_PCT (default 2%). Exits pass: flatten
+     first, stay flat after.
+  4. Fail closed: unreadable risk state, sustained broker-snapshot
+     outage, or the KILL file blocks everything including exits.
   5. Block if the bot already holds the same leg (no doubling).
   6. Sells (HEDGE_CRYPTO/EXIT) only ever reduce exposure, so they pass
      the size gates; drawdown/daily/KILL/state halts still apply.
@@ -93,37 +97,45 @@ def validate(decision: dict, positions: dict, risk: dict = None,
                                   + str(streak) + " ticks"}
 
     # Drawdown halt: explicit ledger value wins, legacy position key
-    # keeps old callers working.
+    # keeps old callers working. Blocks entries only: exits passed above.
     drawdown = 0.0
     try:
         raw = ctx.get("drawdown_pct", book.get("__drawdown_pct", 0.0))
         drawdown = float(raw or 0.0)
     except (TypeError, ValueError):
         drawdown = 0.0
-    if drawdown > config.RISK_MAX_DRAWDOWN_PCT:
-        return {"approved": False, "decision": name,
-                "blocked_reason": "drawdown " + format(drawdown, ".2%")
-                                  + " > "
-                                  + format(config.RISK_MAX_DRAWDOWN_PCT, ".0%")
-                                  + " halt"}
+    drawdown_tripped = drawdown > config.RISK_MAX_DRAWDOWN_PCT
 
-    # Daily-loss halt: applies to sells too (flat and stay flat).
-    if ctx.get("daily_halted"):
-        try:
-            loss = float(ctx.get("day_loss_pct", 0.0) or 0.0)
-        except (TypeError, ValueError):
-            loss = 0.0
-        return {"approved": False, "decision": name,
-                "blocked_reason": "daily loss " + format(loss, ".2%")
-                                  + " > "
-                                  + format(config.RISK_MAX_DAILY_LOSS_PCT,
-                                           ".0%") + " halt"}
+    # Daily-loss halt: entries only, same reason.
+    try:
+        loss = float(ctx.get("day_loss_pct", 0.0) or 0.0)
+    except (TypeError, ValueError):
+        loss = 0.0
+    daily_tripped = bool(ctx.get("daily_halted")) \
+        or loss > config.RISK_MAX_DAILY_LOSS_PCT
 
     if name == "HOLD":
         return {"approved": True, "decision": name, "blocked_reason": ""}
     if name not in ("LONG_RTOKEN", "HEDGE_CRYPTO", "EXIT"):
         return {"approved": False, "decision": name,
                 "blocked_reason": "unknown decision " + name}
+
+    if name in ("HEDGE_CRYPTO", "EXIT"):
+        # Sells only reduce exposure; size and PnL gates don't apply.
+        return {"approved": True, "decision": name, "blocked_reason": ""}
+
+    if drawdown_tripped:
+        return {"approved": False, "decision": name,
+                "blocked_reason": "drawdown " + format(drawdown, ".2%")
+                                  + " > "
+                                  + format(config.RISK_MAX_DRAWDOWN_PCT, ".0%")
+                                  + " halt"}
+    if daily_tripped:
+        return {"approved": False, "decision": name,
+                "blocked_reason": "daily loss " + format(loss, ".2%")
+                                  + " > "
+                                  + format(config.RISK_MAX_DAILY_LOSS_PCT,
+                                           ".0%") + " halt"}
 
     if trade_symbol:
         target = str(trade_symbol).upper()
@@ -139,9 +151,6 @@ def validate(decision: dict, positions: dict, risk: dict = None,
     else:
         mine = bot_exposure().get(target.upper(), 0.0)
 
-    if name in ("HEDGE_CRYPTO", "EXIT"):
-        # Sells only reduce exposure; size gates don't apply.
-        return {"approved": True, "decision": name, "blocked_reason": ""}
     if mine + config.RISK_MAX_POSITION_USD > config.RISK_MAX_POSITION_USD:
         return {"approved": False, "decision": name,
                 "blocked_reason": "bot holds " + target + " $"

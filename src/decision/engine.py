@@ -59,12 +59,16 @@ PROMPT = (
 
 
 def _price_component(price_signal: dict) -> tuple:
+    # Symmetric in the gap: a +-5pp divergence scores +-1.0 either way,
+    # so LONG (+0.30) and HEDGE (-0.30) are equally reachable on price
+    # alone (+-3pp). (A previous 0.5x dampening on crypto-outperformance
+    # capped the negative vote at -0.25, making HEDGE unreachable without
+    # a fully bearish event+sentiment: positions opened but price action
+    # alone could never close them. Found by backtest, 2026-09-15.)
     if (price_signal or {}).get("signal") == "DIVERGENCE_DETECTED":
         gap = float(price_signal.get("divergence_score", 0.0))
         direction = price_signal.get("direction", "FLAT")
         mag = max(-1.0, min(1.0, gap / 0.05))
-        if direction == "CRYPTO_OUTPERFORMING":
-            mag = -abs(mag) * 0.5
         return mag, "divergence " + format(gap, "+.3%") + " (" + direction + ")"
     return 0.0, "no divergence (stable)"
 

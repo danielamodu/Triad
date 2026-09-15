@@ -52,11 +52,26 @@ def test_drawdown_legacy_key_still_works():
     assert r["approved"] is False and "drawdown" in r["blocked_reason"]
 
 
-def test_daily_loss_halt_blocks_sells_too():
+def test_daily_loss_halt_blocks_entries_not_exits():
     ctx = {**HEALTHY, "daily_halted": True, "day_loss_pct": 0.03}
+    r = validate(LONG, {}, ctx)
+    assert r["approved"] is False
+    assert "daily loss" in r["blocked_reason"]
+    # Exits reduce risk: halts must never trap a position.
+    assert validate({"decision": "EXIT"}, {}, ctx)["approved"] is True
+    assert validate({"decision": "HEDGE_CRYPTO"}, {}, ctx)["approved"] is True
+
+
+def test_drawdown_halt_blocks_entries_not_exits():
+    ctx = {**HEALTHY, "drawdown_pct": 0.06}
     assert validate(LONG, {}, ctx)["approved"] is False
-    assert validate({"decision": "EXIT"}, {}, ctx)["approved"] is False
-    assert "daily loss" in validate(LONG, {}, ctx)["blocked_reason"]
+    assert validate({"decision": "EXIT"}, {}, ctx)["approved"] is True
+    assert validate({"decision": "HEDGE_CRYPTO"}, {}, ctx)["approved"] is True
+
+
+def test_day_loss_value_trips_without_flag():
+    ctx = {**HEALTHY, "daily_halted": False, "day_loss_pct": 0.05}
+    assert validate(LONG, {}, ctx)["approved"] is False
 
 
 def test_no_doubling_uses_supplied_exposure():
