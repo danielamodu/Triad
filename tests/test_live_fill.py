@@ -103,10 +103,20 @@ def _mock_broker(monkeypatch, paper_seen):
         return {"orderId": "OID1"}
     monkeypatch.setattr(cli, "place_order", fake_place)
     monkeypatch.setattr(cli, "get_order", lambda oid, **kw: dict(REAL_FILL))
-    monkeypatch.setattr(executor.cli, "_run",
-                        lambda *a, **kw: [{"symbol": "BTCUSDT",
-                                           "lastPrice": "90000",
-                                           "quantityPrecision": 6}])
+
+    def fake_run(*argv, **kw):
+        args = " ".join(argv)
+        if "instruments" in args:
+            return [{"symbol": "BTCUSDT", "status": "online",
+                     "minOrderQty": "0.000001", "minOrderAmount": "1",
+                     "quantityPrecision": 6}]
+        if "account_overview" in args:
+            return {"assets": {"assets": [
+                {"coin": "USDT", "usdValue": "50000", "available": "50000"},
+                {"coin": "BTC", "usdValue": "90000", "available": "1.0"}]}}
+        return [{"symbol": "BTCUSDT", "lastPrice": "90000",
+                 "quantityPrecision": 6}]
+    monkeypatch.setattr(executor.cli, "_run", fake_run)
 
 
 def test_execute_paper_by_default_keeps_demo_flag(monkeypatch):
@@ -137,10 +147,24 @@ def test_execute_survives_fill_fetch_failure(monkeypatch):
     def boom(oid, **kw):
         raise RuntimeError("detail down")
     monkeypatch.setattr(cli, "get_order", boom)
+
+    def fake_run(*argv, **kw):
+        args = " ".join(argv)
+        if "instruments" in args:
+            return [{"symbol": "RAAPLUSDT", "status": "online",
+                     "minOrderQty": "0.000001", "minOrderAmount": "1",
+                     "quantityPrecision": 6}]
+        if "account_overview" in args:
+            return {"assets": {"assets": [
+                {"coin": "USDT", "usdValue": "50000", "available": "50000"}]}}
+        return [{"symbol": "RAAPLUSDT", "lastPrice": "300",
+                 "quantityPrecision": 6}]
+    monkeypatch.setattr(executor.cli, "_run", fake_run)
     leg = executor.execute({"decision": "LONG_RTOKEN", "confidence": 0.9},
                            "RAAPLUSDT")
     assert leg["executed"] is True  # order placed; fill unknown
     assert leg["fill_price"] == 0.0  # downstream falls back to signal price
+    assert leg["fill_unknown"] is True
 
 
 def test_sync_positions_prefers_fill_price():
