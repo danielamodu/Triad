@@ -76,6 +76,9 @@ GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
 # verified against the live /models list.
 GROQ_MODEL = "openai/gpt-oss-20b"
 GROQ_TIMEOUT_SEC = 10
+GROQ_TRACE_FILE = "logs/groq_trace.jsonl"  # every prompt + raw verdict
+GROQ_MAX_DISAGREE = 5  # consecutive Groq-vs-fallback disagreements -> cooldown
+GROQ_COOLDOWN_TICKS = 10  # forced-fallback ticks after the breaker trips
 
 
 def has_credentials() -> bool:

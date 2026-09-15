@@ -168,17 +168,10 @@ def parse_groq_json(text: str) -> dict:
             "reasoning": reasoning, "dominant_signal": dominant}
 
 
-def groq_decide(price_signal: dict, event_signal: dict,
-                sentiment_signal: dict, positions: dict,
-                memory=None) -> dict:
-    """Call Groq. Raises on missing key, timeout, API error, bad JSON."""
-    if not config.GROQ_API_KEY:
-        raise RuntimeError("GROQ_API_KEY not set")
-    try:
-        from groq import Groq
-    except ImportError as exc:
-        raise RuntimeError("groq package missing: pip install groq") from exc
-
+def build_prompt(price_signal: dict, event_signal: dict,
+                 sentiment_signal: dict, positions: dict,
+                 memory=None) -> str:
+    """Render the Groq prompt (pure; also used for the audit trace)."""
     # NOTE: plain .replace(), not .format() — the prompt contains
     # literal JSON braces that .format() would treat as fields.
     if isinstance(memory, list):
@@ -189,27 +182,46 @@ def groq_decide(price_signal: dict, event_signal: dict,
         mem_ctx = memory
     else:
         mem_ctx = []
-    prompt = (PROMPT
-              .replace("{price_signal}", json.dumps(
-                  price_signal or {}, separators=(",", ":")))
-              .replace("{event_signal}", json.dumps(
-                  event_signal or {}, separators=(",", ":")))
-              .replace("{sentiment_signal}", json.dumps(
-                  sentiment_signal or {}, separators=(",", ":")))
-              .replace("{positions}", json.dumps(
-                  positions or {}, separators=(",", ":")))
-              .replace("{memory}", json.dumps(
-                  mem_ctx, separators=(",", ":"))))
+    return (PROMPT
+            .replace("{price_signal}", json.dumps(
+                price_signal or {}, separators=(",", ":")))
+            .replace("{event_signal}", json.dumps(
+                event_signal or {}, separators=(",", ":")))
+            .replace("{sentiment_signal}", json.dumps(
+                sentiment_signal or {}, separators=(",", ":")))
+            .replace("{positions}", json.dumps(
+                positions or {}, separators=(",", ":")))
+            .replace("{memory}", json.dumps(
+                mem_ctx, separators=(",", ":"))))
+
+
+def groq_decide(price_signal: dict, event_signal: dict,
+                sentiment_signal: dict, positions: dict,
+                memory=None) -> dict:
+    """Call Groq. Raises on missing key, timeout, API error, bad JSON."""
+    import time
+
+    if not config.GROQ_API_KEY:
+        raise RuntimeError("GROQ_API_KEY not set")
+    try:
+        from groq import Groq
+    except ImportError as exc:
+        raise RuntimeError("groq package missing: pip install groq") from exc
+
+    prompt = build_prompt(price_signal, event_signal, sentiment_signal,
+                          positions, memory)
     client = Groq(api_key=config.GROQ_API_KEY,
                   timeout=config.GROQ_TIMEOUT_SEC)
     # NOTE: max_tokens must leave headroom for this model's hidden
     # reasoning tokens — too small a budget yields empty content.
+    started = time.monotonic()
     resp = client.chat.completions.create(
         model=config.GROQ_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.1,
         max_tokens=1024,
     )
+    latency_ms = round((time.monotonic() - started) * 1000, 1)
     choice = resp.choices[0]
     text = choice.message.content or ""
     if not text.strip():
@@ -220,13 +232,22 @@ def groq_decide(price_signal: dict, event_signal: dict,
     verdict["scores"] = rule_scores(price_signal, event_signal,
                                     sentiment_signal)
     verdict["engine_used"] = "groq"
+    verdict["latency_ms"] = latency_ms
+    # Underscore keys feed the audit trace; main.py pops them before the
+    # trade log so prompts don't bloat it.
+    verdict["_prompt"] = prompt
+    verdict["_raw_response"] = text[:2000]
     return verdict
 
 
-def decide(signals: dict, positions: dict = None, memory=None) -> dict:
+def decide(signals: dict, positions: dict = None, memory=None,
+           force_fallback: bool = False) -> dict:
     """Primary Groq path with weighted fallback.
 
-    Returns {decision, confidence, reasoning, scores, engine_used}.
+    Returns {decision, confidence, reasoning, scores, engine_used,
+    fallback_decision, fallback_agree}. The fallback is always computed
+    (cheap) so callers can audit Groq against it. force_fallback skips
+    the LLM entirely (drift-breaker cooldown).
     `positions` is optional so existing callers (main.py) keep working.
     `memory` is an optional list of recent decision/outcome dicts;
     the last 3 are passed to the Groq prompt for cross-tick context.
@@ -235,11 +256,23 @@ def decide(signals: dict, positions: dict = None, memory=None) -> dict:
     price = signals.get("price", {})
     event = signals.get("event", {})
     sentiment = signals.get("sentiment", {})
+    fallback = weighted_decision(price, event, sentiment)
+    if force_fallback:
+        fallback["engine_used"] = "weighted_fallback"
+        fallback["fallback_reason"] = "groq cooldown (drift breaker)"
+        fallback["fallback_decision"] = fallback["decision"]
+        fallback["fallback_agree"] = True
+        return fallback
     try:
-        return groq_decide(price, event, sentiment, positions or {},
-                            memory or [])
+        verdict = groq_decide(price, event, sentiment, positions or {},
+                              memory or [])
+        verdict["fallback_decision"] = fallback["decision"]
+        verdict["fallback_agree"] = (verdict.get("decision")
+                                     == fallback["decision"])
+        return verdict
     except Exception as exc:
-        fallback = weighted_decision(price, event, sentiment)
         fallback["engine_used"] = "weighted_fallback"
         fallback["fallback_reason"] = str(exc)[:160]
+        fallback["fallback_decision"] = fallback["decision"]
+        fallback["fallback_agree"] = True
         return fallback

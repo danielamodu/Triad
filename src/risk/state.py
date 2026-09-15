@@ -11,6 +11,9 @@ a JSON document behind. Schema (version 1):
   day: str                      UTC date (YYYY-MM-DD) of day_start_pnl
   day_start_pnl: float          running_pnl at the first tick of `day`
   broker_fail_streak: int       consecutive ticks the broker snapshot failed
+  realized_pnl: float           cumulative closed-trade PnL (USD)
+  groq_streak: int              consecutive Groq-vs-fallback disagreements
+  groq_cooldown: int            remaining forced-fallback ticks (drift breaker)
 
 Drawdown percentages are measured against
 max(RISK_MAX_POSITION_USD, peak_exposure_usd): adverse excursion as a
@@ -33,7 +36,8 @@ def fresh_state() -> dict:
     """Blank state. Never raises."""
     return {"version": VERSION, "exposure": {}, "peak_pnl": 0.0,
             "peak_exposure_usd": 0.0, "day": "", "day_start_pnl": 0.0,
-            "broker_fail_streak": 0}
+            "broker_fail_streak": 0, "realized_pnl": 0.0, "groq_streak": 0,
+            "groq_cooldown": 0}
 
 
 def _coerce(raw) -> dict | None:
@@ -50,7 +54,10 @@ def _coerce(raw) -> dict | None:
                 "day": str(raw.get("day", "") or ""),
                 "day_start_pnl": float(raw.get("day_start_pnl", 0.0)),
                 "broker_fail_streak": int(
-                    raw.get("broker_fail_streak", 0))}
+                    raw.get("broker_fail_streak", 0)),
+                "realized_pnl": float(raw.get("realized_pnl", 0.0) or 0.0),
+                "groq_streak": int(raw.get("groq_streak", 0) or 0),
+                "groq_cooldown": int(raw.get("groq_cooldown", 0) or 0)}
     except (TypeError, ValueError):
         return None
 
@@ -212,3 +219,17 @@ def note_broker(state: dict, ok: bool) -> int:
         return int(state["broker_fail_streak"])
     except Exception:
         return 0
+
+
+def add_realized(state: dict, amount: float) -> float:
+    """Fold closed-trade PnL into the cumulative total. Returns the total."""
+    try:
+        total = float(state.get("realized_pnl", 0.0) or 0.0) + float(
+            amount or 0.0)
+    except (TypeError, ValueError):
+        return 0.0
+    try:
+        state["realized_pnl"] = round(total, 4)
+        return state["realized_pnl"]
+    except Exception:
+        return 0.0

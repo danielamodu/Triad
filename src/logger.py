@@ -18,16 +18,26 @@ def _scrub(obj):
     return obj
 
 
-def append_log(entry: dict) -> str:
-    """Append one entry. Required keys: signal_inputs, decision,
-    action_taken, symbols, reasoning. Returns the file path."""
-    path = os.path.join(config.BASE_DIR, config.LOG_FILE)
+def append_jsonl(rel_path: str, entry: dict) -> str:
+    """Append one scrubbed entry to a JSONL file under BASE_DIR.
+
+    Used for the trade log and the Groq audit trace alike. Creates
+    parent dirs. Returns the file path. Never raises on bad input
+    (raises on I/O: callers decide whether a failed write halts).
+    """
+    path = os.path.join(config.BASE_DIR, rel_path)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     record = {"timestamp": datetime.now(timezone.utc).isoformat(),
-              **_scrub(entry)}
+              **_scrub(entry if isinstance(entry, dict) else {})}
     with open(path, "a", encoding="utf-8") as fh:
         fh.write(json.dumps(record, separators=(",", ":")) + "\n")
     return path
+
+
+def append_log(entry: dict) -> str:
+    """Append one entry. Required keys: signal_inputs, decision,
+    action_taken, symbols, reasoning. Returns the file path."""
+    return append_jsonl(config.LOG_FILE, entry)
 
 
 def _read_entries(log_path: str = "") -> list:
@@ -53,9 +63,9 @@ def _read_entries(log_path: str = "") -> list:
 
 
 def _entry_pnl(entry: dict) -> float:
-    """Per-entry PnL: prefers running_pnl, falls back to pnl/total_pnl,
-    then to the sum of open-position pnls."""
-    for key in ("running_pnl", "pnl", "total_pnl"):
+    """Per-entry PnL: prefers equity_pnl (realized + unrealized), then
+    running_pnl, pnl/total_pnl, then the sum of open-position pnls."""
+    for key in ("equity_pnl", "running_pnl", "pnl", "total_pnl"):
         try:
             val = entry.get(key)
             if val is not None:

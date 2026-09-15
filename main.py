@@ -17,7 +17,7 @@ import config
 from src import cli
 from src.decision.engine import decide
 from src.execution.executor import execute, get_positions, size_for_confidence
-from src.logger import append_log
+from src.logger import append_jsonl, append_log
 from src.risk import state as risk_state
 from src.risk.cage import validate
 from src.risk.state import iter_fills
@@ -54,8 +54,60 @@ def _push_memory(decision: dict, action_taken: dict,
             "confidence": (decision or {}).get("confidence", 0),
             "executed": bool((action_taken or {}).get("executed", False)),
             "running_pnl": running_pnl,
+            "engine": str((decision or {}).get("engine_used", "")),
+            "fallback_decision": str(
+                (decision or {}).get("fallback_decision", "")),
         })
         del MEMORY[:-10]
+    except Exception:
+        pass
+
+
+def _update_groq_breaker(rstate: dict, decision: dict) -> None:
+    """Drift breaker: sustained Groq-vs-fallback disagreement forces the
+    deterministic fallback for GROQ_COOLDOWN_TICKS ticks. Never raises."""
+    try:
+        decision = decision or {}
+        if decision.get("engine_used") != "groq":
+            if decision.get("fallback_reason", "").startswith(
+                    "groq cooldown"):
+                left = int(rstate.get("groq_cooldown", 0) or 0)
+                rstate["groq_cooldown"] = max(0, left - 1)
+            return
+        if decision.get("fallback_agree", True):
+            rstate["groq_streak"] = 0
+            return
+        streak = int(rstate.get("groq_streak", 0) or 0) + 1
+        if streak >= config.GROQ_MAX_DISAGREE:
+            rstate["groq_cooldown"] = config.GROQ_COOLDOWN_TICKS
+            rstate["groq_streak"] = 0
+            print(f"[triad] WARNING: Groq drift breaker tripped "
+                  f"({config.GROQ_MAX_DISAGREE} disagreements); "
+                  f"fallback for {config.GROQ_COOLDOWN_TICKS} ticks.",
+                  flush=True)
+        else:
+            rstate["groq_streak"] = streak
+    except Exception:
+        pass
+
+
+def _write_groq_trace(decision: dict) -> None:
+    """Append the prompt + raw verdict to the audit trace. Never raises."""
+    try:
+        if not isinstance(decision, dict):
+            return
+        if decision.get("engine_used") != "groq" or "_prompt" not in decision:
+            return
+        append_jsonl(config.GROQ_TRACE_FILE,
+                       {"model": config.GROQ_MODEL,
+                        "decision": decision.get("decision"),
+                        "confidence": decision.get("confidence"),
+                        "fallback_decision": decision.get(
+                            "fallback_decision"),
+                        "fallback_agree": decision.get("fallback_agree"),
+                        "latency_ms": decision.get("latency_ms"),
+                        "prompt": decision.get("_prompt"),
+                        "raw_response": decision.get("_raw_response")})
     except Exception:
         pass
 
@@ -119,16 +171,36 @@ def _update_positions(price_signal: dict) -> None:
         pos["usd"] = size  # compat with get_positions() shape
 
 
+def _close_realized(pos: dict, leg: dict) -> float:
+    """Realized PnL for closing a tracked leg.
+
+    Prefers fill proceeds vs booked size; falls back to the stored
+    mark-to-market pnl when no fill data is present. Never raises.
+    """
+    try:
+        size = float(pos.get("size_usd", 0) or 0)
+        fill_value = float((leg or {}).get("fill_value", 0) or 0)
+        if fill_value > 0 and size > 0:
+            if str(pos.get("side", "long")).lower() == "short":
+                return round(size - fill_value, 4)  # sold high, bought back
+            return round(fill_value - size, 4)  # bought, sold proceeds
+        return round(float(pos.get("pnl", 0) or 0), 4)
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def _sync_positions(action_taken: dict, price_signal: dict,
-                    decision_name: str = "") -> None:
-    """Open/close in-memory positions from executed fills. Never raises."""
+                    decision_name: str = "") -> float:
+    """Open/close in-memory positions from executed fills.
+
+    Returns the PnL realized by closed legs this call (0.0 when nothing
+    closed). Never raises.
+    """
+    realized = 0.0
     try:
         if not isinstance(action_taken, dict) or not action_taken.get(
                 "executed"):
-            return
-        if str(decision_name or "").upper() == "EXIT":
-            OPEN_POSITIONS.clear()
-            return
+            return realized
         details = action_taken.get("details")
         if isinstance(details, list):
             legs = [leg for leg in details
@@ -139,7 +211,15 @@ def _sync_positions(action_taken: dict, price_signal: dict,
                 action_taken.get("symbol"):
             legs = [action_taken]
         else:
-            return
+            return realized
+        if str(decision_name or "").upper() == "EXIT":
+            by_symbol = {str(leg.get("symbol", "")).upper(): leg
+                         for leg in legs}
+            for symbol in list(OPEN_POSITIONS):
+                pos = OPEN_POSITIONS.pop(symbol)
+                if isinstance(pos, dict):
+                    realized += _close_realized(pos, by_symbol.get(symbol))
+            return round(realized, 4)
         for leg in legs:
             symbol = str(leg.get("symbol", "")).upper()
             side = str(leg.get("side", "")).lower()
@@ -171,15 +251,18 @@ def _sync_positions(action_taken: dict, price_signal: dict,
             elif side == "sell":
                 if symbol in OPEN_POSITIONS:
                     # Closing a tracked leg flattens it.
-                    del OPEN_POSITIONS[symbol]
+                    pos = OPEN_POSITIONS.pop(symbol)
+                    if isinstance(pos, dict):
+                        realized += _close_realized(pos, leg)
                 else:
                     OPEN_POSITIONS[symbol] = {
                         "symbol": symbol, "side": "short",
                         "size_usd": notional, "entry_price": entry_price,
                         "current_price": current, "pnl": 0.0,
                         "usd": notional}
+        return round(realized, 4)
     except Exception:
-        pass
+        return round(realized, 4)
 
 
 def _running_pnl() -> float:
@@ -369,10 +452,18 @@ def tick(live: bool = False) -> dict:
 
     # ── Risk ledger ──────────────────────────────────────────
     # Load once per tick; all gates below read this snapshot.
+    # Gates see equity PnL (realized + unrealized), matching the
+    # backtest: unrealized-only understates drawdown after a loss is
+    # closed out (the peak remembers, the loss vanishes).
     global _STATE_SAVE_OK
     rstate, state_ok = risk_state.load_state()
+    try:
+        realized_total = float(rstate.get("realized_pnl", 0.0) or 0.0)
+    except (TypeError, ValueError):
+        realized_total = 0.0
+    gate_pnl = round(pre_pnl + realized_total, 4)
     today = datetime.now(timezone.utc).date().isoformat()
-    risk_state.roll_day(rstate, today, pre_pnl)
+    risk_state.roll_day(rstate, today, gate_pnl)
 
     try:
         account = get_positions(paper=not live)
@@ -382,8 +473,8 @@ def tick(live: bool = False) -> dict:
                  and account.get("__ok", False) is True)
     broker_streak = risk_state.note_broker(rstate, broker_ok)
 
-    drawdown = risk_state.drawdown_pct(rstate, pre_pnl)
-    day_loss = risk_state.day_loss_pct(rstate, pre_pnl)
+    drawdown = risk_state.drawdown_pct(rstate, gate_pnl)
+    day_loss = risk_state.day_loss_pct(rstate, gate_pnl)
     if not risk_state.save_state(rstate):
         _STATE_SAVE_OK = False
         print("[triad] WARNING: risk state save failed; "
@@ -410,7 +501,14 @@ def tick(live: bool = False) -> dict:
 
     decision = decide({"price": price, "event": event,
                        "sentiment": sentiment}, tracked,
-                      _memory_context(3))
+                      _memory_context(3),
+                      force_fallback=int(rstate.get("groq_cooldown", 0)
+                                         or 0) > 0)
+    _update_groq_breaker(rstate, decision)
+    _write_groq_trace(decision)
+    # Audit keys stay out of the trade log (they live in the trace file).
+    decision.pop("_prompt", None)
+    decision.pop("_raw_response", None)
 
     # Confidence-based position sizing for the log (executor enforces
     # the same map and skips < 0.6 as LOW_CONFIDENCE_SKIP). This is the
@@ -470,9 +568,12 @@ def tick(live: bool = False) -> dict:
         action_taken = {"executed": False, "order_id": "",
                         "details": f"blocked: {risk.get('blocked_reason')}"}
 
-    _sync_positions(action_taken, price, risk.get("decision", ""))
+    closed_pnl = _sync_positions(action_taken, price,
+                                 risk.get("decision", ""))
+    realized_total = risk_state.add_realized(rstate, closed_pnl)
     _update_positions(price)
     running_pnl = _running_pnl()
+    equity_pnl = round(running_pnl + realized_total, 4)
     memory_summary = _memory_context(3)
     executed_notional_usd = _executed_notional(action_taken)
     fees_usd = _action_fees(action_taken)
@@ -492,6 +593,8 @@ def tick(live: bool = False) -> dict:
              "symbols": tick_symbols,
              "positions": list(OPEN_POSITIONS.values()),
              "running_pnl": running_pnl,
+             "realized_pnl": realized_total,
+             "equity_pnl": equity_pnl,
              "position_size_usd": position_size_usd,
              "executed_notional_usd": executed_notional_usd,
              "fees_usd": fees_usd,
@@ -580,12 +683,15 @@ def main() -> int:
         except Exception:
             traceback.print_exc()
             try:
+                crash_pnl = _running_pnl()
                 append_log({"signal_inputs": {}, "decision": {},
                             "action_taken": {"executed": False,
                                              "details": "tick crashed"},
                             "symbols": SYMBOLS,
                             "positions": list(OPEN_POSITIONS.values()),
-                            "running_pnl": _running_pnl(),
+                            "running_pnl": crash_pnl,
+                            "realized_pnl": 0.0,
+                            "equity_pnl": crash_pnl,
                             "position_size_usd": 0.0,
                             "executed_notional_usd": 0.0,
                             "fees_usd": 0.0,

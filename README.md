@@ -75,12 +75,14 @@ Weights: price_divergence 0.5, event 0.3, sentiment 0.2.
 
 ## Safety model
 
-1. Executor hardcodes `--paper-trading` — live is unreachable from this bot.
+1. Paper is the default; live needs `--live` + `TRIAD_LIVE_OK=1` + no
+   `logs/KILL`, otherwise the run is refused before any trading.
 2. Risk cage tracks bot-opened exposure in a persisted ledger
    (`logs/risk_state.json`, atomic writes — survives restarts, unlike the
-   append-only trade log): $1,000 max single position, halt-all past 5%
-   peak-to-current drawdown, halt-all for the day past 2% daily loss,
-   no doubling; sells always pass size gates; `logs/KILL` manual halt.
+   append-only trade log): $1,000 max single position, no doubling, halt
+   on 5% peak-to-current drawdown or 2% daily loss. Halts block entries
+   only — exits always pass so a halt can never trap a position;
+   `logs/KILL` manual halt.
 3. Fail-closed: an unreadable risk ledger or 3 consecutive failed broker
    snapshots block ALL trading (including HOLD) until resolved.
 4. Ticks: 300s calm interval, 60s floor even on divergence wake.
@@ -98,7 +100,13 @@ Weights: price_divergence 0.5, event 0.3, sentiment 0.2.
 9. Boot reconciles from the broker: unknown balances are adopted into
    tracking and seeded into the ledger (never the reverse); resting
    orders are reported, never touched.
-10. `python -m pytest tests` — 61 tests covering ledger math, cage gates,
+10. Ledger gates see equity PnL (realized + unrealized); each entry logs
+    `realized_pnl` and `equity_pnl` alongside `running_pnl`.
+11. Groq is audited and leashed: every prompt + raw verdict goes to
+    `logs/groq_trace.jsonl`, each verdict carries its fallback agreement,
+    and 5 consecutive disagreements force the deterministic fallback
+    for 10 ticks (drift breaker).
+12. `python -m pytest tests` — 84 tests covering ledger math, cage gates,
     live routing, validation, settlement, startup, and tick wiring.
 
 ## Notes

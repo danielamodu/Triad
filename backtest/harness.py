@@ -21,10 +21,9 @@ Deliberate approximations (read before trusting the numbers):
   - HEDGE is modeled as flattening the rToken leg; live it trims BTC
     while keeping rToken exposure. The replay is the more conservative
     trade (realizes PnL, cuts exposure).
-  - the ledger is fed equity PnL (realized + unrealized). Live feeds
-    unrealized only, which understates drawdown after a realized loss
-    (peak remembers, but the closed loss vanishes from running_pnl).
-    The replay measures the risk the cage *should* see.
+  - the ledger is fed equity PnL (realized + unrealized), matching live
+    since the realized-PnL alignment (live used to feed unrealized only,
+    understating drawdown after a closed loss).
   - fills at close ignore intraday slippage and spread.
 
 Cache: backtest/data/<SYMBOL>_1D.json (gitignored). Report: printed +
