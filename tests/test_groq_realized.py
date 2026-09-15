@@ -206,6 +206,44 @@ def test_entry_pnl_prefers_equity(tmp_path):
     assert _entry_pnl({"running_pnl": 1.0}) == 1.0  # old entries unchanged
 
 
+def test_sync_positions_partial_close_keeps_residual():
+    # Adopted whale leg: $720k booked, HEDGE sells $1000 of it. Only the
+    # pro-rata share of unrealized realizes; the rest stays open.
+    main.OPEN_POSITIONS.clear()
+    main.OPEN_POSITIONS["BTCUSDT"] = {
+        "symbol": "BTCUSDT", "side": "long", "size_usd": 720000.0,
+        "entry_price": 90000.0, "current_price": 90125.0, "pnl": 1000.0,
+        "usd": 720000.0}
+    realized = main._sync_positions(
+        {"executed": True,
+         "details": {"symbol": "BTCUSDT", "side": "sell",
+                     "notional_usdt": 1000.0, "fill_value": 1000.0,
+                     "executed": True}},
+        {"rtoken_last": "1", "crypto_last": "90125"}, "HEDGE_CRYPTO")
+    assert 0.0 < realized < 5.0  # ~1000/721000 * 1000, not 1000-720000
+    residual = main.OPEN_POSITIONS.get("BTCUSDT")
+    assert residual is not None
+    assert residual["size_usd"] == round(720000.0 * (1 - 1000.0 / 721000.0), 4)
+    main.OPEN_POSITIONS.clear()
+
+
+def test_sync_positions_exit_partial_keeps_residual():
+    main.OPEN_POSITIONS.clear()
+    main.OPEN_POSITIONS["BTCUSDT"] = {
+        "symbol": "BTCUSDT", "side": "long", "size_usd": 50000.0,
+        "entry_price": 90000.0, "current_price": 90000.0, "pnl": 500.0,
+        "usd": 50000.0}
+    realized = main._sync_positions(
+        {"executed": True,
+         "details": {"symbol": "BTCUSDT", "side": "sell",
+                     "notional_usdt": 1000.0, "fill_value": 1000.0,
+                     "executed": True}},
+        {}, "EXIT")
+    assert 0.0 < realized < 50.0
+    assert "BTCUSDT" in main.OPEN_POSITIONS
+    main.OPEN_POSITIONS.clear()
+
+
 def test_append_jsonl_writes_scrubbed(tmp_path):
     path = append_jsonl(os.path.join(str(tmp_path), "t.jsonl"),
                         {"a": 1, "APIKEY": "secret"})

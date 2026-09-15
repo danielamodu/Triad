@@ -189,6 +189,47 @@ def _close_realized(pos: dict, leg: dict) -> float:
         return 0.0
 
 
+# A close whose fill covers >=99.9% of the leg's market value is a full
+# close (exact fill-vs-size booking). Anything smaller is a partial:
+# only its pro-rata share of unrealized counts as realized, and the
+# residual stays open. (Found on the live box 2026-09-16: the startup
+# reconcile adopts the whole wallet balance as one leg while HEDGE only
+# sells $1000 of it — booking fill-minus-size as if the full leg closed
+# minted a phantom -$719k realized loss.)
+_CLOSE_FULL_FRACTION = 0.999
+
+
+def _close_leg(pos: dict, leg: dict) -> tuple:
+    """Close (part of) a tracked leg. Returns (realized, residual).
+
+    residual None means fully closed; otherwise the shrunken position
+    to keep open. Never raises.
+    """
+    try:
+        fill = float((leg or {}).get("fill_value", 0) or 0)
+    except (TypeError, ValueError):
+        fill = 0.0
+    if fill <= 0:
+        # No fill data: full close at the stored mark (old behavior).
+        return _close_realized(pos, leg), None
+    try:
+        size = float((pos or {}).get("size_usd", 0) or 0)
+        pnl = float((pos or {}).get("pnl", 0) or 0)
+    except (TypeError, ValueError):
+        return _close_realized(pos, leg), None
+    short = str((pos or {}).get("side", "long")).lower() == "short"
+    value = size - pnl if short else size + pnl
+    if value <= 0 or fill >= value * _CLOSE_FULL_FRACTION:
+        return _close_realized(pos, leg), None
+    frac = fill / value
+    realized = round(frac * pnl, 4)
+    residual = dict(pos) if isinstance(pos, dict) else {}
+    residual["size_usd"] = round(size * (1 - frac), 4)
+    residual["pnl"] = round(pnl * (1 - frac), 4)
+    residual["usd"] = residual["size_usd"]
+    return realized, residual
+
+
 def _sync_positions(action_taken: dict, price_signal: dict,
                     decision_name: str = "") -> float:
     """Open/close in-memory positions from executed fills.
@@ -218,7 +259,10 @@ def _sync_positions(action_taken: dict, price_signal: dict,
             for symbol in list(OPEN_POSITIONS):
                 pos = OPEN_POSITIONS.pop(symbol)
                 if isinstance(pos, dict):
-                    realized += _close_realized(pos, by_symbol.get(symbol))
+                    part, residual = _close_leg(pos, by_symbol.get(symbol))
+                    realized += part
+                    if residual is not None:
+                        OPEN_POSITIONS[symbol] = residual
             return round(realized, 4)
         for leg in legs:
             symbol = str(leg.get("symbol", "")).upper()
@@ -250,10 +294,15 @@ def _sync_positions(action_taken: dict, price_signal: dict,
                     "usd": notional}
             elif side == "sell":
                 if symbol in OPEN_POSITIONS:
-                    # Closing a tracked leg flattens it.
+                    # Closing (part of) a tracked leg. Partial fills keep
+                    # a shrunken residual open instead of booking the
+                    # whole leg as closed.
                     pos = OPEN_POSITIONS.pop(symbol)
                     if isinstance(pos, dict):
-                        realized += _close_realized(pos, leg)
+                        part, residual = _close_leg(pos, leg)
+                        realized += part
+                        if residual is not None:
+                            OPEN_POSITIONS[symbol] = residual
                 else:
                     OPEN_POSITIONS[symbol] = {
                         "symbol": symbol, "side": "short",
