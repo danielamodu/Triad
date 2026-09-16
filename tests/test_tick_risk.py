@@ -303,3 +303,82 @@ def test_exit_fires_both_legs_simultaneously(monkeypatch, tmp_path):
     # Deterministic log order regardless of thread scheduling.
     assert [leg["symbol"] for leg in details] == sorted(
         leg["symbol"] for leg in details)
+
+
+def _bot_leg(symbol="RAAPLUSDT", side="long", entry=100.0, current=100.0,
+             reconciled=False):
+    leg = {"symbol": symbol, "side": side, "size_usd": 1000.0,
+           "entry_price": entry, "current_price": current,
+           "pnl": 0.0, "usd": 1000.0}
+    if reconciled:
+        leg["reconciled"] = True
+    return leg
+
+
+def test_bracket_stop_and_take():
+    main.OPEN_POSITIONS.clear()
+    try:
+        main.OPEN_POSITIONS["RAAPLUSDT"] = _bot_leg(current=97.5)
+        assert main._bracket_breach() == ("RAAPLUSDT", "stop")
+        main.OPEN_POSITIONS["RAAPLUSDT"] = _bot_leg(current=103.5)
+        assert main._bracket_breach() == ("RAAPLUSDT", "take")
+        main.OPEN_POSITIONS["RAAPLUSDT"] = _bot_leg(
+            side="short", current=97.0)
+        assert main._bracket_breach() == ("RAAPLUSDT", "take")
+        main.OPEN_POSITIONS["RAAPLUSDT"] = _bot_leg(current=101.0)
+        assert main._bracket_breach() == ("", "")
+    finally:
+        main.OPEN_POSITIONS.clear()
+
+
+def test_bracket_ignores_adopted_inventory():
+    main.OPEN_POSITIONS.clear()
+    try:
+        main.OPEN_POSITIONS["BTCUSDT"] = _bot_leg(
+            symbol="BTCUSDT", entry=90000.0, current=45000.0,
+            reconciled=True)
+        assert main._bracket_breach() == ("", "")
+    finally:
+        main.OPEN_POSITIONS.clear()
+    assert main._bracket_breach() == ("", "")
+
+
+def test_bracket_breach_forces_exit(monkeypatch, tmp_path):
+    monkeypatch.setattr(config, "RISK_STATE_FILE",
+                        os.path.join(str(tmp_path), "risk_state.json"))
+    # Signal marks the bot leg 3% under its entry: the tick's own price
+    # refresh trips the stop (marks always come from the feed, never test
+    # fixtures sitting in the book).
+    monkeypatch.setattr(main, "get_divergence",
+                        lambda: dict(CALM_PRICE, rtoken_last="97"))
+    monkeypatch.setattr(main, "get_event", lambda: dict(CALM_EVENT))
+    monkeypatch.setattr(main, "get_sentiment", lambda: dict(CALM_SENT))
+    monkeypatch.setattr(main, "get_positions", lambda **kw: {"__ok": True})
+    monkeypatch.setattr(main, "get_balance", lambda coin, **kw: 25000.0)
+    monkeypatch.setattr(main, "decide",
+                        lambda s, p, m, **kw: {"decision": "HOLD",
+                                               "confidence": 0.0,
+                                               "reasoning": "t", "scores": {},
+                                               "engine_used": "test"})
+    seen = {}
+    monkeypatch.setattr(main, "execute",
+                        lambda dec, sym, **kw: seen.update(decision=dec) or
+                        {"executed": True, "order_id": "z", "symbol": sym,
+                         "side": "sell", "notional_usdt": 1000.0,
+                         "fill_value": 1000.0})
+    captured = {}
+    monkeypatch.setattr(main, "append_log",
+                        lambda e: captured.update(e) or "mock")
+    main.MEMORY.clear()
+    main.OPEN_POSITIONS.clear()
+    main.OPEN_POSITIONS["RAAPLUSDT"] = _bot_leg(entry=100.0, current=100.0)
+    main._STATE_SAVE_OK = True
+    try:
+        main.tick()
+    finally:
+        main.MEMORY.clear()
+        main.OPEN_POSITIONS.clear()
+    assert seen["decision"]["decision"] == "EXIT"
+    assert captured["decision"]["bracket_trigger"] == "RAAPLUSDT:stop"
+    assert "bracket stop" in captured["decision"]["reasoning"]
+    assert captured["action_taken"]["executed"] is True

@@ -222,6 +222,10 @@ pick. Safety check passed = safety limits approved the pick.
 12. `python -m pytest tests` — 116 tests covering ledger math, safety
     gates, live routing, validation, settlement, startup, and tick
     wiring.
+13. Per-leg brackets (bot-opened legs only): −2% stop / +3% take from
+    entry flattens the book via EXIT on the next tick. EXIT passes entry
+    halts by design so a stop is never trapped; starting values,
+    uncalibrated.
 
 ## Notes
 

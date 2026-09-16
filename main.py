@@ -237,6 +237,39 @@ def _close_leg(pos: dict, leg: dict) -> tuple:
     return realized, residual
 
 
+def _bracket_breach() -> tuple:
+    """(symbol, kind) of the first bot leg outside its bracket.
+
+    kind is "stop" (adverse move past STOP_PCT) or "take" (favorable move
+    past TAKE_PCT); shorts mirror. Adopted (reconciled) inventory is
+    excluded — brackets guard what the bot deployed, and BTC noise would
+    stop-hunt the wallet otherwise. ("", "") when nothing breached.
+    Never raises."""
+    try:
+        names = sorted(OPEN_POSITIONS)
+    except Exception:
+        return "", ""
+    for symbol in names:
+        try:
+            pos = OPEN_POSITIONS.get(symbol)
+            if not isinstance(pos, dict) or pos.get("reconciled"):
+                continue
+            entry = float(pos.get("entry_price", 0) or 0)
+            current = float(pos.get("current_price", 0) or 0)
+            if entry <= 0 or current <= 0:
+                continue
+            move = (current - entry) / entry
+            if str(pos.get("side", "long")).lower() == "short":
+                move = -move
+            if move <= -float(config.STOP_PCT):
+                return symbol, "stop"
+            if move >= float(config.TAKE_PCT):
+                return symbol, "take"
+        except (TypeError, ValueError):
+            continue
+    return "", ""
+
+
 def _sync_positions(action_taken: dict, price_signal: dict,
                     decision_name: str = "") -> float:
     """Open/close in-memory positions from executed fills.
@@ -721,6 +754,21 @@ def tick(live: bool = False) -> dict:
     # Audit keys stay out of the trade log (they live in the trace file).
     decision.pop("_prompt", None)
     decision.pop("_raw_response", None)
+
+    # Per-leg brackets: a breached bot leg flattens the book now instead
+    # of waiting for the next regime signal. EXIT passes every entry halt
+    # by design, so a stop can never be trapped by a halt; KILL/corrupt/
+    # broker-dead still block everything (fail closed).
+    breach_symbol, breach_kind = _bracket_breach()
+    if breach_symbol and str(decision.get(
+            "decision", "HOLD")).upper() != "EXIT":
+        decision = {"decision": "EXIT", "confidence": 1.0,
+                    "reasoning": (f"bracket {breach_kind} on "
+                                  f"{breach_symbol}: flatten all legs"),
+                    "scores": decision.get("scores", {}),
+                    "engine_used": decision.get("engine_used",
+                                                "weighted_fallback"),
+                    "bracket_trigger": breach_symbol + ":" + breach_kind}
 
     # Confidence-based position sizing for the log (executor enforces
     # the same map and skips < 0.6 as LOW_CONFIDENCE_SKIP). This is the
