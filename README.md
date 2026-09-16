@@ -18,16 +18,17 @@ call logged and inspectable. Live on EC2, dashboard on Vercel.
   `git clone https://github.com/danielamodu/Triad && cd Triad && python -m pytest tests -q`
   (116 tests, stdlib + pytest only)
 
-Live snapshot (2026-09-16 21:08 UTC, paper):
+Live snapshot (2026-09-16 21:51 UTC, paper):
 
 | Metric | Value |
 |---|---|
-| Ticks / fills | 1420 / 43 |
-| All-time bot P&L | −$13.89 |
-| Wallet (legs + USDT cash) | $385,825 |
-| Money in play (gross open) | $333,833 BTC leg |
-| Safety halts hit | 0 (drop-from-peak 0.95% vs 5% cap) |
-| AI check | 2 current AI-vs-backup disagreements (breaker trips at 5) |
+| Ticks / fills | 1438 / 44 |
+| All-time bot P&L | −$14.78 |
+| Closed-trade win rate | 37.2% (16/43) |
+| Wallet (legs + USDT cash) | $384,937 |
+| Money in play (gross open) | $333,334 BTC leg |
+| Safety halts hit | 0 (drop-from-peak 1.09% vs 5% cap) |
+| AI check | drift breaker ENGAGED live (forced backup rules, 9 ticks left) |
 | Loop | 300s countdown, triple wake, 60s floor |
 
 ## Track 3 submission mapping
