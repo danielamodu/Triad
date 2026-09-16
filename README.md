@@ -2,6 +2,8 @@
 
 rToken/crypto divergence agent on the Bitget UTA API via the `bgc` CLI.
 Decision loop: **3 signals → AI decision → safety limits → execute → log**.
+Three reasons to wake early: price divergence, high-conviction event,
+extreme sentiment. Both legs fire simultaneously.
 (Code names: decision loop = `HEARTBEAT_INTERVAL` tick in `main.py`;
 safety limits = risk cage in `src/risk/cage.py`.)
 
@@ -11,7 +13,7 @@ Dashboard words used below: **Trades** (positions), **AI check** (Groq trust),
 
 ```
 Triad/
-├── main.py                        # decision loop (300s countdown, event wake on divergence)
+├── main.py                        # decision loop (300s countdown, triple wake: divergence/event/sentiment)
 ├── config.py                      # env, symbols, safety limits, divergence threshold
 ├── src/
 │   ├── cli.py                     # bgc subprocess wrapper (always --paper-trading = practice mode)

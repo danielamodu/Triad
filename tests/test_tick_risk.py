@@ -1,5 +1,6 @@
 """Tests for the Layer 1 tick wiring + broker-health marker."""
 import os
+import threading
 
 import config
 import main
@@ -153,3 +154,113 @@ def test_tracked_book_excludes_dunder_keys(monkeypatch, tmp_path):
                          "reasoning": "t", "scores": {},
                          "engine_used": "test"})
     assert entry["risk"]["decision"] == "HOLD"  # cage saw a clean book
+
+
+def _wake_summary(monkeypatch, tmp_path, price, event, sentiment):
+    """Run main.tick() with fixed signals; return tick()'s summary dict."""
+    monkeypatch.setattr(config, "RISK_STATE_FILE",
+                        os.path.join(str(tmp_path), "risk_state.json"))
+    monkeypatch.setattr(main, "get_divergence", lambda: dict(price))
+    monkeypatch.setattr(main, "get_event", lambda: dict(event))
+    monkeypatch.setattr(main, "get_sentiment", lambda: dict(sentiment))
+    monkeypatch.setattr(main, "get_positions", lambda **kw: {"__ok": True})
+    monkeypatch.setattr(main, "decide",
+                        lambda s, p, m, **kw: {"decision": "HOLD",
+                                               "confidence": 0.0,
+                                               "reasoning": "t", "scores": {},
+                                               "engine_used": "test"})
+    monkeypatch.setattr(main, "append_log", lambda e: "mock")
+    main.MEMORY.clear()
+    main.OPEN_POSITIONS.clear()
+    main._STATE_SAVE_OK = True
+    try:
+        return main.tick()
+    finally:
+        main.MEMORY.clear()
+        main.OPEN_POSITIONS.clear()
+
+
+CALM_PRICE = {"signal": "STABLE", "direction": "FLAT", "divergence_score": 0.0,
+              "rtoken_change": 0.0, "crypto_change": 0.0,
+              "rtoken_last": "100", "crypto_last": "90000"}
+CALM_EVENT = {"signal": "NEUTRAL", "confidence": 0.5}
+CALM_SENT = {"sentiment": "neutral", "score": 0.5}
+
+
+def test_wake_reason_divergence(monkeypatch, tmp_path):
+    price = dict(CALM_PRICE, signal="DIVERGENCE_DETECTED")
+    summary = _wake_summary(monkeypatch, tmp_path, price, CALM_EVENT,
+                            CALM_SENT)
+    assert summary["wake_reason"] == "divergence"
+    assert summary["diverged"] is True
+
+
+def test_wake_reason_event_needs_conviction(monkeypatch, tmp_path):
+    hot = {"signal": "BULLISH", "confidence": 0.9}
+    summary = _wake_summary(monkeypatch, tmp_path, CALM_PRICE, hot,
+                            CALM_SENT)
+    assert summary["wake_reason"] == "event"
+    cold = {"signal": "BULLISH", "confidence": 0.5}
+    summary = _wake_summary(monkeypatch, tmp_path, CALM_PRICE, cold,
+                            CALM_SENT)
+    assert summary["wake_reason"] == ""
+
+
+def test_wake_reason_sentiment_extremes(monkeypatch, tmp_path):
+    fear = {"sentiment": "bearish", "score": 0.1}
+    summary = _wake_summary(monkeypatch, tmp_path, CALM_PRICE, CALM_EVENT,
+                            fear)
+    assert summary["wake_reason"] == "sentiment"
+    calm = _wake_summary(monkeypatch, tmp_path, CALM_PRICE, CALM_EVENT,
+                         CALM_SENT)
+    assert calm["wake_reason"] == ""
+    assert calm["diverged"] is False
+
+
+def test_wake_reason_never_raises_on_garbage():
+    assert main.wake_reason({}, {}, {}) == ""
+    assert main.wake_reason(None, None, None) == ""
+
+
+def test_exit_fires_both_legs_simultaneously(monkeypatch, tmp_path):
+    """EXIT's two legs must run concurrently: a barrier both legs have to
+    reach proves simultaneity (sequential execution would time out)."""
+    gate = threading.Barrier(2, timeout=10)
+    calls = []
+    monkeypatch.setattr(config, "RISK_STATE_FILE",
+                        os.path.join(str(tmp_path), "risk_state.json"))
+    monkeypatch.setattr(main, "get_divergence", lambda: dict(CALM_PRICE))
+    monkeypatch.setattr(main, "get_event", lambda: dict(CALM_EVENT))
+    monkeypatch.setattr(main, "get_sentiment", lambda: dict(CALM_SENT))
+    monkeypatch.setattr(main, "get_positions", lambda **kw: {"__ok": True})
+    monkeypatch.setattr(main, "decide",
+                        lambda s, p, m, **kw: {"decision": "EXIT",
+                                               "confidence": 0.9,
+                                               "reasoning": "t", "scores": {},
+                                               "engine_used": "test"})
+
+    def fake_execute(dec, sym, **kw):
+        calls.append(sym)
+        gate.wait()  # both legs must be in flight together
+        return {"executed": True, "order_id": "x-" + sym, "symbol": sym,
+                "side": "sell", "notional_usdt": 100.0, "fill_value": 100.0}
+
+    monkeypatch.setattr(main, "execute", fake_execute)
+    captured = {}
+    monkeypatch.setattr(main, "append_log",
+                        lambda e: captured.update(e) or "mock")
+    main.MEMORY.clear()
+    main.OPEN_POSITIONS.clear()
+    main._STATE_SAVE_OK = True
+    try:
+        main.tick()
+    finally:
+        main.MEMORY.clear()
+        main.OPEN_POSITIONS.clear()
+    assert sorted(calls) == ["BTCUSDT", "RAAPLUSDT"]
+    details = captured["action_taken"]["details"]
+    assert isinstance(details, list) and len(details) == 2
+    assert captured["action_taken"]["executed"] is True
+    # Deterministic log order regardless of thread scheduling.
+    assert [leg["symbol"] for leg in details] == sorted(
+        leg["symbol"] for leg in details)

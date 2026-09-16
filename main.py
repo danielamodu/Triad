@@ -9,6 +9,7 @@ and skips the sleep. Nothing here can crash the loop: every stage is
 guarded and failures are logged to logs/trades.jsonl.
 """
 import argparse
+import concurrent.futures
 import sys
 import time
 import traceback
@@ -424,6 +425,34 @@ def safe(stage: str, fn, *args, fallback):
         return {**fallback, "reason": f"{stage} failed: {exc}"[:200]}
 
 
+def wake_reason(price: dict, event: dict, sentiment: dict) -> str:
+    """Why this tick fires early ("" when calm).
+
+    Three wake reasons per the architecture, not one: a detected price
+    divergence, a high-conviction event signal, or extreme sentiment
+    positioning. Never raises."""
+    try:
+        if (price or {}).get("signal") == "DIVERGENCE_DETECTED":
+            return "divergence"
+        try:
+            conf = float((event or {}).get("confidence", 0.5) or 0.5)
+        except (TypeError, ValueError):
+            conf = 0.5
+        if str((event or {}).get("signal", "NEUTRAL")).upper() != "NEUTRAL" \
+                and conf >= config.EVENT_WAKE_CONFIDENCE:
+            return "event"
+        try:
+            score = float((sentiment or {}).get("score", 0.5) or 0.5)
+        except (TypeError, ValueError):
+            score = 0.5
+        if score <= config.SENTIMENT_WAKE_LO \
+                or score >= config.SENTIMENT_WAKE_HI:
+            return "sentiment"
+    except Exception:
+        pass
+    return ""
+
+
 # Balances below this are dust: left alone, never adopted, never traded.
 _RECONCILE_DUST_USD = 1.0
 
@@ -674,14 +703,34 @@ def tick(live: bool = False) -> dict:
             symbols = [DECISION_SYMBOL.get(risk["decision"], "")]
         legs = []
         try:
-            for symbol in symbols:
-                if symbol:
-                    legs.append(execute({"decision": risk["decision"],
-                                         "confidence": decision.get(
-                                             "confidence", 0)},
-                                        symbol, live=live,
-                                        ref_price=_current_price(
-                                            symbol, price)))
+            # Both legs fire simultaneously (architecture: two legs execute
+            # together, not one after the other). Order is restored by
+            # symbol so logs and settlement stay deterministic; one leg's
+            # crash never blocks the other.
+            targets = sorted({s for s in symbols if s})
+            if targets:
+                decision_ctx = {"decision": risk["decision"],
+                                "confidence": decision.get(
+                                    "confidence", 0)}
+                with concurrent.futures.ThreadPoolExecutor(
+                        max_workers=len(targets)) as pool:
+                    future_of = {
+                        pool.submit(
+                            execute, dict(decision_ctx), symbol,
+                            live=live,
+                            ref_price=_current_price(symbol, price)): symbol
+                        for symbol in targets}
+                    by_symbol: dict = {}
+                    for future, symbol in future_of.items():
+                        try:
+                            by_symbol[symbol] = future.result()
+                        except Exception as exc:
+                            by_symbol[symbol] = {
+                                "executed": False, "order_id": "",
+                                "details": f"executor crashed: {exc}"[:200]}
+                legs = [by_symbol[s] for s in targets]
+            else:
+                legs = []
         except Exception as exc:
             legs.append({"executed": False, "order_id": "",
                          "details": f"executor crashed: {exc}"[:200]})
@@ -708,6 +757,7 @@ def tick(live: bool = False) -> dict:
     memory_summary = _memory_context(3)
     executed_notional_usd = _executed_notional(action_taken)
     fees_usd = _action_fees(action_taken)
+    reason = wake_reason(price, event, sentiment)
 
     # Fold fills into the persisted ledger (blocks/skips change nothing).
     risk_state.record_fills(rstate, action_taken)
@@ -732,6 +782,7 @@ def tick(live: bool = False) -> dict:
              "drawdown_pct": round(drawdown, 6),
              "mode": "live" if live else "paper",
              "memory_summary": memory_summary,
+             "wake_reason": reason,
              "reasoning": decision.get("reasoning", "")}
     try:
         append_log(entry)
@@ -741,7 +792,8 @@ def tick(live: bool = False) -> dict:
     _push_memory(decision, action_taken, running_pnl)
     _print_status(price, event, sentiment, decision, risk, action_taken,
                   live)
-    return {"diverged": price.get("signal") == "DIVERGENCE_DETECTED",
+    return {"diverged": reason == "divergence",
+            "wake_reason": reason,
             "decision": decision.get("decision"),
             "executed": bool(action_taken.get("executed"))}
 
@@ -833,20 +885,22 @@ def main() -> int:
                             "reasoning": traceback.format_exc()[-500:]})
             except Exception:
                 pass
-            summary = {"diverged": False}
+            summary = {"diverged": False, "wake_reason": ""}
         if args.once:
             return 0
         elapsed = time.time() - last_tick
         wait = config.MIN_TICK_INTERVAL - elapsed
-        if summary.get("diverged"):
+        wake = summary.get("wake_reason") or (
+            "divergence" if summary.get("diverged") else "")
+        if wake:
             # Event wake: act fast, but never faster than the minimum
             # tick interval (protects API budgets when a gap persists).
             if wait > 0:
-                print(f"[triad] divergence wake: next tick in {wait:.0f}s.",
+                print(f"[triad] {wake} wake: next tick in {wait:.0f}s.",
                       flush=True)
                 time.sleep(wait)
             else:
-                print("[triad] divergence wake: acting immediately.",
+                print(f"[triad] {wake} wake: acting immediately.",
                       flush=True)
         else:
             time.sleep(config.HEARTBEAT_INTERVAL)
