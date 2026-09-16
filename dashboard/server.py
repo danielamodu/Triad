@@ -224,6 +224,12 @@ class Handler(BaseHTTPRequestHandler):
         self._cors()
         self.send_header("Content-Type", mime)
         self.send_header("Content-Length", str(len(body)))
+        if "/assets/" in disk_path.replace("\\", "/"):
+            # Hashed bundle filenames: safe to cache forever.
+            self.send_header("Cache-Control",
+                             "public, max-age=31536000, immutable")
+        elif disk_path.endswith("index.html"):
+            self.send_header("Cache-Control", "no-cache")
         self.end_headers()
         self.wfile.write(body)
 
