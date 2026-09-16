@@ -51,17 +51,33 @@ and intended vs executed size.
 ## Backtest (offline, deterministic)
 
 ```powershell
-python -m backtest.harness            # cached candles, current thresholds
-python -m backtest.harness --refresh  # refetch 1D candles (RAAPL/BTC, ~90d)
-python -m backtest.harness --sweep    # also try alternate sizing cutoffs
+python -m backtest.harness                          # cached candles, current thresholds
+python -m backtest.harness --refresh                # refetch 1D candles (RAAPL/BTC, ~90d)
+python -m backtest.harness --sweep                  # also try alternate sizing cutoffs
+python -m backtest.harness --with-overlays          # replay event + sentiment from history
+python -m backtest.harness --with-overlays --split 0.7           # walk-forward train/test
+python -m backtest.harness --spread-bps 1 --slip-bps 2           # fuller cost model
 ```
 
 Replays daily candles through the real scorer, sizing, and cage
-(Groq excluded — non-deterministic; event/sentiment fixed neutral).
-Fills at close, 0.1%/side. Latest 89-day run: 5 trades, 40% win rate,
+(Groq excluded — non-deterministic). Fills at close, 0.1%/side plus
+optional spread/slippage. Latest 89-day run: 5 trades, 40% win rate,
 profit factor 2.41, +$80 vs +$114 buy-and-hold; high-confidence bucket
 3 trades +$101, mid bucket 2 trades −$38. n=5 is far too thin to tune
 on — directionally supportive of the 0.6/0.8 cuts, nothing more.
+Walk-forward (@0.7 split) holds up out-of-sample, same caveat.
+
+Stage-1 signals (all replayable, all behind `--with-overlays`):
+event = 1H volume+range expansion vs 48h medians (4 events in-sample);
+sentiment = funding-rate z-score vs trailing ~30d (active 61/89 bars)
+plus perp-vs-spot basis. In-sample, the overlays demote the two
+high-bucket winners to mid (train +$38 → −$0): at current weights they
+dilute conviction rather than add it. Weights stay uncalibrated until
+the trade count justifies it — the neutral baseline remains the
+default replay, and live votes are logged per-tick for the soak to
+judge. Endpoint lessons baked in: `fundingRateHistory` hangs under
+`--paper-trading` (reads go direct), `candlesHistory` needs explicit
+time bounds in ≤90-day pages, and no empty fetch is ever cached.
 
 Two real bugs found by the harness and fixed: the fallback scorer
 halved crypto-outperformance votes so HEDGE could never fire on price

@@ -84,7 +84,8 @@ def as_list(data) -> list:
     if isinstance(data, list):
         return data
     if isinstance(data, dict):
-        for key in ("items", "list", "rows", "data"):
+        for key in ("items", "list", "rows", "data", "resultList",
+                    "result"):
             if isinstance(data.get(key), list):
                 return data[key]
         # single object -> one row
@@ -116,6 +117,73 @@ def candles(category: str, symbol: str, interval: str, limit: int) -> list:
 def funding_rate(category: str, symbol: str) -> list:
     return as_list(_run("market", "--action", "fundingRate",
                         "--category", category, "--symbol", symbol))
+
+
+def funding_rate_history(category: str, symbol: str,
+                         limit: int = 100, cursor: str = "") -> list:
+    """Historical funding rates, newest first: [{symbol, fundingRate,
+    fundingRateTimestamp}]. Never raises (returns [] on failure).
+
+    NOTE: paper must be False here. The demo backend hangs on this
+    endpoint (found 2026-09-16: --paper-trading never returns); reads
+    are account-independent anyway.
+    """
+    try:
+        args = ["market", "--action", "fundingRateHistory",
+                "--category", category, "--symbol", symbol,
+                "--limit", str(limit)]
+        if cursor:
+            args += ["--cursor", str(cursor)]
+        return as_list(_run(*args, paper=False))
+    except Exception:
+        return []
+
+
+def candles_history(category: str, symbol: str, interval: str,
+                    start_ms: int = 0, end_ms: int = 0,
+                    limit: int = 100) -> list:
+    """Historical klines in a [start, end) ms window (caller's job to
+    sort). Rows: [ts, o, h, l, c, baseVol, quoteVol]. Never raises.
+
+    NOTE: both bounds are required — the endpoint hangs without them
+    (found 2026-09-16). Missing bounds return [] immediately.
+    """
+    if start_ms <= 0 or end_ms <= 0 or end_ms <= start_ms:
+        return []
+    try:
+        return as_list(_run("market", "--action", "candlesHistory",
+                            "--category", category, "--symbol", symbol,
+                            "--interval", interval,
+                            "--startTime", str(start_ms),
+                            "--endTime", str(end_ms),
+                            "--limit", str(limit), paper=False))
+    except Exception:
+        return []
+
+
+def orderbook(category: str, symbol: str) -> dict:
+    """Top-of-book snapshot ({} on failure). Never raises."""
+    try:
+        rows = as_list(_run("market", "--action", "orderbook",
+                            "--category", category, "--symbol", symbol))
+        return rows[0] if rows and isinstance(rows[0], dict) else {}
+    except Exception:
+        return {}
+
+
+def top_spread_bps(category: str, symbol: str) -> float:
+    """Best ask/bid spread in basis points (0.0 when unreadable)."""
+    try:
+        book = orderbook(category, symbol)
+        bids = book.get("bids", book.get("bid", []))
+        asks = book.get("asks", book.get("ask", []))
+        bid = float(bids[0][0]) if bids and bids[0] else 0.0
+        ask = float(asks[0][0]) if asks and asks[0] else 0.0
+        if bid > 0 and ask > bid:
+            return round((ask - bid) / ((ask + bid) / 2) * 10000, 3)
+    except (TypeError, ValueError, IndexError):
+        pass
+    return 0.0
 
 
 def open_interest(category: str, symbol: str = "") -> list:

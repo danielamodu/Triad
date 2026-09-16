@@ -1,6 +1,7 @@
-"""Offline backtest: replay daily candles through the live decision stack.
+"""Offline backtest: replay candles through the live decision stack.
 
     python -m backtest.harness [--refresh] [--sweep] [--fee 0.001]
+        [--interval 1D] [--split 0.7] [--spread-bps 0] [--slip-bps 0]
 
 What it replays for real (same code as production):
   - price-divergence math (gap, direction, threshold)
@@ -8,15 +9,18 @@ What it replays for real (same code as production):
   - confidence sizing buckets (parametrized for the sweep)
   - the risk cage (validate) with a real ledger (state.py math):
     no-doubling exposure, drawdown halt, daily-loss halt
+  - event detection (expansion_event) and positioning sentiment
+    (funding z-score + perp basis) when --with-overlays is given;
+    otherwise both stay fixed neutral (legacy behavior, and what the
+    pinned unit tests assert)
 
 What it simulates:
-  - fills at the daily close, fee_pct per side (default 0.1%, as observed
-    on a live paper fill: 0.9997 USDT on ~1000 USDT)
+  - fills at the bar close; per-side cost = fee + spread + slippage
+    (defaults 0.1% fee as observed on a live paper fill, zero
+    spread/slip unless passed explicitly)
   - one rToken position at a time; HEDGE_CRYPTO and EXIT both flatten it
 
 Deliberate approximations (read before trusting the numbers):
-  - event is fixed NEUTRAL and sentiment fixed neutral: the replay
-    isolates the price edge. Live, those inputs move votes.
   - EXIT never fires here (it needs a BEARISH event); live it can.
   - HEDGE is modeled as flattening the rToken leg; live it trims BTC
     while keeping rToken exposure. The replay is the more conservative
@@ -24,9 +28,9 @@ Deliberate approximations (read before trusting the numbers):
   - the ledger is fed equity PnL (realized + unrealized), matching live
     since the realized-PnL alignment (live used to feed unrealized only,
     understating drawdown after a closed loss).
-  - fills at close ignore intraday slippage and spread.
+  - fills at close ignore intraday path (wider bars = wider lie).
 
-Cache: backtest/data/<SYMBOL>_1D.json (gitignored). Report: printed +
+Cache: backtest/data/<SYMBOL>_<INT>.json (gitignored). Report: printed +
 backtest/data/report.json. Stdlib only.
 """
 import argparse
@@ -39,6 +43,8 @@ from src import cli
 from src.decision.engine import weighted_decision
 from src.risk import state as risk_state
 from src.risk.cage import validate
+from src.signals.event_signal import expansion_event
+from src.signals.sentiment_signal import funding_zscore
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 FEE_PCT = 0.001
@@ -47,6 +53,10 @@ BENCH_SIZE = 1000.0  # buy-and-hold deploys the max position, like the bot
 
 NEUTRAL_EVENT = {"signal": "NEUTRAL", "confidence": 0.5}
 NEUTRAL_SENTIMENT = {"sentiment": "neutral", "score": 0.5}
+
+INTERVAL_MS = {"1m": 60000, "3m": 180000, "5m": 300000, "15m": 900000,
+               "30m": 1800000, "1H": 3600000, "4H": 14400000,
+               "6H": 21600000, "12H": 43200000, "1D": 86400000}
 
 
 def fetch_candles(symbol: str, interval: str = "1D",
@@ -62,13 +72,21 @@ def fetch_candles(symbol: str, interval: str = "1D",
                                float(row.get("high", 0)),
                                float(row.get("low", 0)),
                                float(row.get("close", 0)))
+                try:
+                    qvol = float(row.get("quoteVol", row.get("qvol", 0)) or 0)
+                except (TypeError, ValueError):
+                    qvol = 0.0
             else:
                 ts = int(row[0])
                 o, h, lo, c = (float(row[1]), float(row[2]),
                                float(row[3]), float(row[4]))
+                try:
+                    qvol = float(row[6]) if len(row) > 6 else 0.0
+                except (TypeError, ValueError):
+                    qvol = 0.0
             if ts > 0 and c > 0:
                 out.append({"ts": ts, "open": o, "high": h, "low": lo,
-                            "close": c})
+                            "close": c, "qvol": qvol})
         except (TypeError, ValueError, IndexError, KeyError):
             continue
     out.sort(key=lambda r: r["ts"])
@@ -94,6 +112,161 @@ def load_or_fetch(symbol: str, refresh: bool = False) -> list:
     except OSError:
         pass
     return rows
+
+
+def fetch_candles_range(symbol: str, category: str, interval: str,
+                        start_ms: int, end_ms: int) -> list:
+    """Page candlesHistory across [start, end). Ascending candle dicts.
+    Never raises (short/empty on failure)."""
+    out, seen = [], set()
+    # NOTE: history-candles serves ~90 bars per request; wider windows
+    # come back empty (found 2026-09-16). Page in 80-bar steps.
+    step = INTERVAL_MS.get(interval, 86400000) * 80
+    cursor = start_ms
+    try:
+        guard = 0
+        while cursor < end_ms and guard < 50:
+            guard += 1
+            rows = cli.candles_history(category, symbol, interval,
+                                       cursor, min(cursor + step, end_ms),
+                                       100)
+            if not rows:
+                cursor += step  # empty window (too old?): skip ahead
+                continue
+            for row in rows:
+                try:
+                    ts = int(row[0])
+                    if ts in seen:
+                        continue
+                    seen.add(ts)
+                    out.append({"ts": ts, "open": float(row[1]),
+                                "high": float(row[2]), "low": float(row[3]),
+                                "close": float(row[4]),
+                                "qvol": float(row[6]) if len(row) > 6
+                                else 0.0})
+                except (TypeError, ValueError, IndexError):
+                    continue
+            try:
+                cursor = max(r["ts"] for r in out) + 1
+            except ValueError:
+                break
+            if len(rows) < 2:
+                break
+    except Exception:
+        pass
+    return sorted([r for r in out if start_ms <= r["ts"] < end_ms],
+                  key=lambda r: r["ts"])
+
+
+def fetch_funding_series(symbol: str, pages: int = 12) -> list:
+    """Historical funding, ascending [(ts_ms, rate)]. Cached to disk
+    (refresh with --refresh). Never raises."""
+    os.makedirs(DATA_DIR, exist_ok=True)
+    path = os.path.join(DATA_DIR, "funding_%s.json" % symbol)
+    try:
+        with open(path, encoding="utf-8") as fh:
+            cached = json.load(fh)
+        if isinstance(cached, list) and cached:
+            return [(int(ts), float(rate)) for ts, rate in cached]
+    except (OSError, ValueError, TypeError):
+        pass
+    out = []
+    try:
+        for page in range(1, pages + 1):
+            rows = cli.funding_rate_history(config.FUTURES_CATEGORY,
+                                            symbol, 100, str(page))
+            if not rows:
+                break
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                try:
+                    out.append((int(row.get("fundingRateTimestamp", 0)),
+                                float(row.get("fundingRate", ""))))
+                except (TypeError, ValueError):
+                    continue
+    except Exception:
+        pass
+    out = sorted(set(o for o in out if o[0] > 0))
+    if not out:
+        return []  # never cache a failed fetch (it would pin the hole)
+    try:
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(out, fh)
+    except OSError:
+        pass
+    return out
+
+
+def _z_to_score(z: float) -> float:
+    try:
+        return round(max(0.0, min(1.0, 0.5 - 0.5 * max(-1.0, min(1.0, z / 3.0)))), 3)
+    except (TypeError, ValueError):
+        return 0.5
+
+
+def build_overlays(r_rows: list, funding: list, fut_rows: list) -> dict:
+    """Per-date {event, sentiment} replayed from history.
+
+    date -> {"event": expansion_event over trailing daily candles,
+    "sentiment": funding z-score (0.7) + perp basis (0.3)}. Dates with
+    thin funding history degrade to neutral components. Pure function
+    of its inputs (deterministic).
+    """
+    closes = {}
+    for row in fut_rows or []:
+        if isinstance(row, dict) and row.get("ts") and row.get("close"):
+            closes[datetime.fromtimestamp(row["ts"] / 1000,
+                                          tz=timezone.utc).date().isoformat()] \
+                = float(row["close"])
+    fund_by_date: dict = {}
+    for ts, rate in funding or []:
+        day = datetime.fromtimestamp(ts / 1000,
+                                     tz=timezone.utc).date().isoformat()
+        fund_by_date.setdefault(day, []).append(rate)
+    ordered_days = sorted(fund_by_date)
+    overlays: dict = {}
+    changes = daily_changes(r_rows)
+    closes_by_date = {d: p for d, _, p in changes}
+    # r_rows index by date for the trailing expansion window
+    by_date = {}
+    for row in r_rows:
+        if isinstance(row, dict) and row.get("ts"):
+            by_date[datetime.fromtimestamp(
+                row["ts"] / 1000, tz=timezone.utc).date().isoformat()] = row
+    sorted_dates = sorted(by_date)
+    for i, day in enumerate(sorted_dates):
+        window = [by_date[d] for d in sorted_dates[max(0, i - 49):i + 1]]
+        # qvol defaults to 0.0 (old caches predate volume): without
+        # volume the expansion gate honestly stays shut.
+        rows = [[r.get("ts", 0), r.get("open", 0), r.get("high", 0),
+                 r.get("low", 0), r.get("close", 0), 0,
+                 r.get("qvol", 0.0)] for r in window]
+        exp = expansion_event(rows)
+        event = {"signal": exp["signal"], "confidence": exp["confidence"]}
+        # Funding readings strictly before this date's close.
+        trail = []
+        for d in ordered_days:
+            if d <= day:
+                trail.extend(fund_by_date[d])
+        trail = trail[-91:]
+        if len(trail) >= 11:
+            # funding_zscore wants newest-first; trail is oldest-first.
+            z, _ = funding_zscore(list(reversed(trail))[:91])
+            fund_score = _z_to_score(z)
+        else:
+            fund_score = 0.5
+        basis_score = 0.5
+        if day in closes and day in closes_by_date and closes_by_date[day] > 0:
+            bps = (closes[day] / closes_by_date[day] - 1) * 10000
+            basis_score = round(max(0.0, min(1.0, 0.5 - 0.5 * max(
+                -1.0, min(1.0, bps / 10.0)))), 3)
+        score = round(0.7 * fund_score + 0.3 * basis_score, 3)
+        sentiment = {"sentiment": "bullish" if score > 0.55
+                     else "bearish" if score < 0.45 else "neutral",
+                     "score": score}
+        overlays[day] = {"event": event, "sentiment": sentiment}
+    return overlays
 
 
 def daily_changes(candles: list) -> list:
@@ -141,19 +314,26 @@ def _size_for(confidence: float, mid_cut: float, high_cut: float) -> float:
 
 
 def run_backtest(days: list, fee_pct: float = FEE_PCT,
-                 mid_cut: float = 0.6, high_cut: float = 0.8) -> dict:
+                 mid_cut: float = 0.6, high_cut: float = 0.8,
+                 spread_bps: float = 0.0, slip_bps: float = 0.0,
+                 overlays: dict = None) -> dict:
     """Replay aligned days. A day is (date, rtoken_chg, crypto_chg, price).
 
-    Returns the full report dict (metrics, buckets, trades, equity).
-    Deterministic: same days in, same report out. Never raises on data
-    (a crash bug would be a harness bug: let it raise).
+    Per-side cost = fee_pct + spread + slippage (bps args). overlays
+    maps date -> {"event", "sentiment"}; missing dates replay neutral
+    (legacy behavior). Returns the full report dict (metrics, buckets,
+    trades, equity). Deterministic: same days in, same report out.
+    Never raises on data (a crash bug would be a harness bug: let it
+    raise).
     """
     ledger = risk_state.fresh_state()
     cash, realized = START_CASH, 0.0
+    cost_rate = fee_pct + (spread_bps + slip_bps) / 10000.0
     open_pos = None  # {qty, entry, size, bucket, conf, date}
     trades, equity_curve = [], []
     cage_blocks = {"drawdown": 0, "daily": 0, "exposure": 0, "other": 0}
     peak_equity, max_dd = START_CASH, 0.0
+    overlays = overlays or {}
 
     for date, r_chg, c_chg, price in days:
         price_sig = build_price_signal(r_chg, c_chg, price, 0.0)
@@ -168,8 +348,10 @@ def run_backtest(days: list, fee_pct: float = FEE_PCT,
                "exposure": dict(ledger["exposure"]), "corrupt": False,
                "broker_dead": False, "broker_streak": 0}
 
-        decision = weighted_decision(price_sig, NEUTRAL_EVENT,
-                                     NEUTRAL_SENTIMENT)
+        overlay = overlays.get(date) or {}
+        event = overlay.get("event", NEUTRAL_EVENT)
+        sentiment = overlay.get("sentiment", NEUTRAL_SENTIMENT)
+        decision = weighted_decision(price_sig, event, sentiment)
         name = decision["decision"]
         conf = decision["confidence"]
         risk = validate(decision, {}, ctx, config.RTOKEN_SYMBOL)
@@ -188,8 +370,8 @@ def run_backtest(days: list, fee_pct: float = FEE_PCT,
         size = 0.0 if name == "HOLD" else _size_for(conf, mid_cut, high_cut)
         if name == "LONG_RTOKEN" and size > 0 and open_pos is None \
                 and cash >= size:
-            fee = size * fee_pct
-            qty = (size - fee) / price
+            cost = size * cost_rate
+            qty = (size - cost) / price
             open_pos = {"qty": qty, "entry": price, "size": size,
                         "bucket": "high" if conf > high_cut else "mid",
                         "conf": conf, "date": date}
@@ -201,15 +383,15 @@ def run_backtest(days: list, fee_pct: float = FEE_PCT,
                                      "executed": True}})
         elif name in ("HEDGE_CRYPTO", "EXIT") and open_pos is not None:
             proceeds = open_pos["qty"] * price
-            fee = proceeds * fee_pct
-            cash += proceeds - fee
-            pnl = (proceeds - fee) - open_pos["size"]
+            cost = proceeds * cost_rate
+            cash += proceeds - cost
+            pnl = (proceeds - cost) - open_pos["size"]
             realized += pnl
             trades.append({"entry_date": open_pos["date"], "exit_date": date,
                            "exit": name, "bucket": open_pos["bucket"],
                            "conf": open_pos["conf"], "size": open_pos["size"],
                            "pnl": round(pnl, 2),
-                           "fees": round(open_pos["size"] * fee_pct + fee, 2)})
+                           "fees": round(open_pos["size"] * cost_rate + cost, 2)})
             risk_state.record_fills(
                 ledger, {"executed": True,
                          "details": {"symbol": config.RTOKEN_SYMBOL,
@@ -272,6 +454,15 @@ def sweep(days: list, fee_pct: float = FEE_PCT) -> list:
     return out
 
 
+def walk_forward(days: list, split: float = 0.7, **kwargs) -> dict:
+    """Chronological train/test split. Returns {"train": rep, "test":
+    rep}. A strategy that only works in-sample shows it here."""
+    cut = max(1, int(len(days) * split))
+    return {"split": split,
+            "train": run_backtest(days[:cut], **kwargs),
+            "test": run_backtest(days[cut:], **kwargs)}
+
+
 def _align(r_rows: list, c_rows: list) -> list:
     """Inner-join daily changes on date -> (date, r_chg, c_chg, r_close)."""
     r_map = {d: (c, p) for d, c, p in daily_changes(r_rows)}
@@ -288,6 +479,16 @@ def main() -> int:
                         help="also run alternate sizing cutoffs")
     parser.add_argument("--fee", type=float, default=FEE_PCT,
                         help="per-side fee fraction (default 0.001)")
+    parser.add_argument("--spread-bps", type=float, default=0.0,
+                        help="per-side spread in basis points (default 0)")
+    parser.add_argument("--slip-bps", type=float, default=0.0,
+                        help="per-side slippage in basis points (default 0)")
+    parser.add_argument("--split", type=float, default=0.0,
+                        help="walk-forward train fraction, e.g. 0.7 "
+                             "(default 0 = full-sample replay)")
+    parser.add_argument("--with-overlays", action="store_true",
+                        help="replay event (expansion) + sentiment (funding "
+                             "z + basis) from history instead of neutral")
     args = parser.parse_args()
 
     r_rows = load_or_fetch(config.RTOKEN_SYMBOL, args.refresh)
@@ -299,19 +500,27 @@ def main() -> int:
     if not days:
         print("[backtest] FATAL: no overlapping dates", flush=True)
         return 2
-    rep = run_backtest(days, args.fee)
-    print(f"[backtest] {rep['first_day']}..{rep['last_day']} "
-          f"({rep['n_days']} days, fee={args.fee})")
-    print(f"  equity ${START_CASH:,.0f} -> ${rep['final_equity']:,.0f} "
-          f"({rep['return_pct']:+.2f}%, PnL ${rep['total_pnl']:+,.2f})")
-    print(f"  max drawdown {rep['max_drawdown_pct']:.2f}% | "
-          f"trades {rep['n_trades']} | win rate {rep['win_rate']:.0%} | "
-          f"profit factor {rep['profit_factor']} | fees ${rep['fees_paid']:,.2f}")
-    print(f"  buckets: high {rep['buckets']['high']} | "
-          f"mid {rep['buckets']['mid']}")
-    print(f"  cage blocks: {rep['cage_blocks']}")
-    print(f"  buy-and-hold ${BENCH_SIZE:,.0f}: ${rep['benchmark_bh_pnl']:+,.2f}"
-          f"{' | position open at end' if rep['open_at_end'] else ''}")
+    overlays: dict = {}
+    if args.with_overlays:
+        funding = fetch_funding_series(config.CRYPTO_SYMBOL)
+        fut_rows = load_or_fetch_fut(args.refresh)
+        overlays = build_overlays(r_rows, funding, fut_rows)
+        used = sum(1 for d, _, _, _ in days if d in overlays)
+        print(f"[backtest] overlays: {used}/{len(days)} bars", flush=True)
+    kwargs: dict = {"fee_pct": args.fee, "spread_bps": args.spread_bps,
+                    "slip_bps": args.slip_bps, "overlays": overlays}
+    if args.split > 0:
+        wf = walk_forward(days, args.split, **kwargs)
+        for name in ("train", "test"):
+            _print_report(wf[name], name + " ",
+                          fee=args.fee, show_buckets=(name == "train"))
+        print(f"[backtest] walk-forward @{args.split}: train "
+              f"${wf['train']['total_pnl']:+,.2f} vs test "
+              f"${wf['test']['total_pnl']:+,.2f}")
+        rep = wf["test"]
+    else:
+        rep = run_backtest(days, **kwargs)
+        _print_report(rep, "", fee=args.fee, show_buckets=True)
     if args.sweep:
         print("  sweep (mid_cut, high_cut):")
         for row in sweep(days, args.fee):
@@ -325,6 +534,50 @@ def main() -> int:
         json.dump(rep, fh, indent=2)
     print(f"[backtest] report written to backtest/data/report.json")
     return 0
+
+
+def load_or_fetch_fut(refresh: bool = False) -> list:
+    """Cached BTCUSDT USDT-FUTURES daily candles (for basis replay)."""
+    os.makedirs(DATA_DIR, exist_ok=True)
+    path = os.path.join(DATA_DIR, "BTCUSDT_FUT_1D.json")
+    if not refresh:
+        try:
+            with open(path, encoding="utf-8") as fh:
+                rows = json.load(fh)
+            if isinstance(rows, list) and rows:
+                return rows
+        except (OSError, ValueError):
+            pass
+    import time
+    now_ms = int(time.time() * 1000)
+    rows = fetch_candles_range(config.CRYPTO_SYMBOL,
+                               config.FUTURES_CATEGORY, "1D",
+                               now_ms - 400 * 86400000, now_ms)
+    if not rows:
+        return []  # never cache a failed fetch
+    try:
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(rows, fh)
+    except OSError:
+        pass
+    return rows
+
+
+def _print_report(rep: dict, prefix: str = "", fee: float = FEE_PCT,
+                  show_buckets: bool = True) -> None:
+    print(f"[backtest] {prefix}{rep['first_day']}..{rep['last_day']} "
+          f"({rep['n_days']} days, fee={fee})")
+    print(f"  equity ${START_CASH:,.0f} -> ${rep['final_equity']:,.0f} "
+          f"({rep['return_pct']:+.2f}%, PnL ${rep['total_pnl']:+,.2f})")
+    print(f"  max drawdown {rep['max_drawdown_pct']:.2f}% | "
+          f"trades {rep['n_trades']} | win rate {rep['win_rate']:.0%} | "
+          f"profit factor {rep['profit_factor']} | fees ${rep['fees_paid']:,.2f}")
+    if show_buckets:
+        print(f"  buckets: high {rep['buckets']['high']} | "
+              f"mid {rep['buckets']['mid']}")
+    print(f"  cage blocks: {rep['cage_blocks']}")
+    print(f"  buy-and-hold ${BENCH_SIZE:,.0f}: ${rep['benchmark_bh_pnl']:+,.2f}"
+          f"{' | position open at end' if rep['open_at_end'] else ''}")
 
 
 if __name__ == "__main__":

@@ -52,3 +52,35 @@ def test_align_inner_joins_dates():
     aligned = harness._align(r, c)
     assert [d for d, _, _, _ in aligned] == ["1970-01-01"]
     assert aligned[0][1] == 0.1  # (110-100)/100
+
+
+def test_costs_reduce_pnl():
+    days = [("2026-01-02", 0.04, 0.0, 100.0),
+            ("2026-01-03", 0.0, 0.0, 110.0),
+            ("2026-01-04", -0.04, 0.0, 120.0)]
+    base = harness.run_backtest(days)
+    costly = harness.run_backtest(days, spread_bps=10.0, slip_bps=10.0)
+    assert costly["total_pnl"] < base["total_pnl"]
+    assert costly["n_trades"] == base["n_trades"] == 1
+
+
+def test_overlays_can_move_votes():
+    days = [("2026-01-02", 0.04, 0.0, 100.0),   # price vote +0.4 -> LONG
+            ("2026-01-03", 0.0, 0.0, 110.0),
+            ("2026-01-04", -0.04, 0.0, 120.0)]  # -4pp gap -> HEDGE closes
+    base = harness.run_backtest(days)
+    overlays = {"2026-01-02": {
+        "event": {"signal": "BEARISH", "confidence": 0.9},
+        "sentiment": {"sentiment": "bearish", "score": 0.0}}}
+    # price +0.4*0.5=+0.2, event -0.8*0.3=-0.24, sent -1.0*0.2=-0.2
+    # final -0.24 -> HOLD: the overlays flip the trade away.
+    changed = harness.run_backtest(days, overlays=overlays)
+    assert base["n_trades"] == 1 and changed["n_trades"] == 0
+
+
+def test_walk_forward_splits():
+    days = [("2026-01-0%d" % i, 0.04 if i % 2 else -0.04, 0.0, 100.0)
+            for i in range(2, 8)]
+    wf = harness.walk_forward(days, 0.5)
+    assert set(wf) == {"split", "train", "test"}
+    assert wf["train"]["n_days"] == 3 and wf["test"]["n_days"] == 3
