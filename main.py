@@ -18,7 +18,8 @@ from datetime import datetime, timezone
 import config
 from src import cli
 from src.decision.engine import decide
-from src.execution.executor import execute, get_positions, size_for_confidence
+from src.execution.executor import execute, get_balance, get_positions, \
+    size_for_confidence
 from src.logger import _read_entries, append_jsonl, append_log
 from src.risk import state as risk_state
 from src.risk.cage import validate
@@ -40,6 +41,10 @@ _STATE_SAVE_OK = True
 # {decision, confidence, executed, running_pnl}. The last 3 are passed
 # to the Groq prompt each tick for cross-tick context.
 MEMORY: list = []
+
+# Last tick's wallet total (USD) for the per-tick balance-change field.
+# None until the first successful broker snapshot; tests reset it.
+_LAST_WALLET_USD: float | None = None
 
 
 def _memory_context(n: int = 3) -> list:
@@ -345,6 +350,52 @@ def _bot_running_pnl() -> float:
     return round(total, 4)
 
 
+def _wallet_snapshot(account: dict, broker_ok: bool,
+                     live: bool = False) -> tuple:
+    """Broker wallet for the log: ({SYM: usd}, total_usd or None).
+
+    Legs come from the tick's account snapshot; USDT cash is read via
+    get_balance. Unknown on broker failure (None, never 0.0-masquerading).
+    Never raises."""
+    if not broker_ok or not isinstance(account, dict):
+        return {}, None
+    wallet: dict = {}
+    try:
+        for symbol, info in account.items():
+            if str(symbol).startswith("__") or not isinstance(info, dict):
+                continue
+            try:
+                wallet[str(symbol).upper()] = round(
+                    float(info.get("usd", 0) or 0), 4)
+            except (TypeError, ValueError):
+                continue
+        try:
+            cash = get_balance("USDT", paper=not live)
+            wallet["USDT"] = round(max(0.0, float(cash or 0.0)), 4)
+        except Exception:
+            pass
+        return wallet, round(sum(wallet.values()), 4)
+    except Exception:
+        return {}, None
+
+
+def _balance_change(wallet_usd: float | None) -> float | None:
+    """Tick-over-tick wallet move. None when the wallet is unknown; the
+    first good snapshot reports 0.0 as its own baseline. Never raises."""
+    global _LAST_WALLET_USD
+    try:
+        if wallet_usd is None:
+            return None
+        if _LAST_WALLET_USD is None:
+            _LAST_WALLET_USD = wallet_usd
+            return 0.0
+        change = round(wallet_usd - _LAST_WALLET_USD, 4)
+        _LAST_WALLET_USD = wallet_usd
+        return change
+    except Exception:
+        return None
+
+
 def _executed_notional(action_taken: dict) -> float:
     """Gross USD actually filled by an action (0.0 unless executed).
 
@@ -631,6 +682,8 @@ def tick(live: bool = False) -> dict:
     broker_ok = (isinstance(account, dict)
                  and account.get("__ok", False) is True)
     broker_streak = risk_state.note_broker(rstate, broker_ok)
+    wallet, wallet_usd = _wallet_snapshot(account, broker_ok, live)
+    balance_change_usd = _balance_change(wallet_usd)
 
     drawdown = risk_state.drawdown_pct(rstate, gate_pnl)
     day_loss = risk_state.day_loss_pct(rstate, gate_pnl)
@@ -782,6 +835,9 @@ def tick(live: bool = False) -> dict:
              "position_size_usd": position_size_usd,
              "executed_notional_usd": executed_notional_usd,
              "fees_usd": fees_usd,
+             "wallet": wallet,
+             "wallet_usd": wallet_usd,
+             "balance_change_usd": balance_change_usd,
              "drawdown_pct": round(drawdown, 6),
              "mode": "live" if live else "paper",
              "memory_summary": memory_summary,
@@ -882,6 +938,9 @@ def main() -> int:
                             "position_size_usd": 0.0,
                             "executed_notional_usd": 0.0,
                             "fees_usd": 0.0,
+                            "wallet": {},
+                            "wallet_usd": None,
+                            "balance_change_usd": None,
                             "drawdown_pct": 0.0,
                             "mode": "live" if live else "paper",
                             "memory_summary": _memory_context(3),

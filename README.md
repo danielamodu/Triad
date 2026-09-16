@@ -1,4 +1,69 @@
-# Triad — cross-asset execution agent (Bitget AI Hackathon S2)
+# Triad — cross-asset execution agent (Bitget AI Hackathon S2, Track 3)
+
+> The only trading agent that distrusts its own AI by design: every call
+> is AI-decided, safety-checked, and audit-logged — and when the AI
+> disagrees with the backup rules 5 times running, the backup rules take
+> over automatically.
+
+## TL;DR for judges
+
+**What:** autonomous paper-trader for Apple stock-token vs BTC spreads —
+3 signals → 1 AI decision → hard safety limits → both legs fire → every
+call logged and inspectable. Live on EC2, dashboard on Vercel.
+
+- Live dashboard: https://triadxbt.vercel.app (no login)
+- Health: https://triadxbt.vercel.app/health · Calls: `/logs` ·
+  Profit: `/equity` · Safety: `/risk`
+- Verify in 30 seconds:
+  `git clone https://github.com/danielamodu/Triad && cd Triad && python -m pytest tests -q`
+  (116 tests, stdlib + pytest only)
+
+Live snapshot (2026-09-16, paper):
+
+| Metric | Value |
+|---|---|
+| Ticks / fills | 1411 / 42 |
+| All-time bot P&L | −$13.89 |
+| Safety halts hit | 0 (drawdown 0.4% vs 5% cap) |
+| AI drift breaker | engaged in the wild (`groq_cooldown` seen live) |
+| Loop | 300s countdown, triple wake, 60s floor |
+
+## Track 3 submission mapping
+
+| Handbook requirement | Where it lives |
+|---|---|
+| Thesis (no feature lists) | Thesis section below |
+| Public repo + README | this repo (`pip install -r requirements.txt`, run: `python main.py --once`) |
+| Paper log: timestamp, asset, direction, price, quantity, balance change | `logs/trades.jsonl`: per-leg fills (`symbol/side/fill_price/fill_value`) + `wallet_usd` + `balance_change_usd` every tick |
+| Backtest with code | `python -m backtest.harness` (deterministic replay + walk-forward) |
+| Demo | https://triadxbt.vercel.app |
+
+## Thesis
+
+**Problem:** stock-token/crypto spreads drift apart intraday, but humans
+can't watch both tapes 24/7 — and bots that watch them trade without
+guardrails. **Approach:** fuse three inputs (price divergence, live news
+headlines, positioning sentiment) into one AI decision per tick, gated by
+hard safety limits, with a deterministic fallback that seizes control
+when the AI drifts. **Proof:** live paper-trading with every call logged
+(signals, decider, safety verdict, fills) plus a deterministic replay
+harness. **Use case:** always-on, auditable spread execution for
+tokenized-stock/crypto pairs — and the cage + dashboard + harness as
+reusable agent infra.
+
+## Known limitations (read before judging)
+
+- rToken legs are **signal-only on paper**: market data lists them but
+  place-order rejects them, so only the BTC leg fills. Live stock-spot
+  exists for eligible regions; the strategy is built for it.
+- Backtest sample is thin (n≈5): supports the sizing cuts
+  directionally, nothing more. Walk-forward holds, same caveat.
+- Sentiment is a funding-rate positioning proxy, not an X firehose —
+  labelled as such in every log entry.
+- Paper P&L starts near zero by construction (adopted funds enter at
+  the mark); judge the machinery, not the balance.
+
+---
 
 rToken/crypto divergence agent on the Bitget UTA API via the `bgc` CLI.
 Decision loop: **3 signals → AI decision → safety limits → execute → log**.
@@ -33,6 +98,7 @@ Pairs: Apple rToken `RAAPLUSDT` vs `BTCUSDT` (both SPOT).
 ## Setup (Windows PowerShell)
 
 ```powershell
+pip install -r requirements.txt      # dotenv + pytest (groq optional)
 $env:BITGET_API_KEY="demo-key"          # demo keys! (Demo mode -> API Management)
 $env:BITGET_SECRET_KEY="demo-secret"
 $env:BITGET_PASSPHRASE="demo-passphrase"
@@ -153,7 +219,7 @@ pick. Safety check passed = safety limits approved the pick.
     verdict carries its backup-rules agreement and answer speed
     (`latency_ms`), and 5 consecutive AI-vs-backup disagreements force
     the backup rules for 10 ticks (drift breaker).
-12. `python -m pytest tests` — 84 tests covering ledger math, safety
+12. `python -m pytest tests` — 116 tests covering ledger math, safety
     gates, live routing, validation, settlement, startup, and tick
     wiring.
 

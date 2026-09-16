@@ -7,7 +7,8 @@ import main
 from src.execution import executor
 
 
-def _quiet_tick(monkeypatch, tmp_path, decide_result, execute_result=None):
+def _quiet_tick(monkeypatch, tmp_path, decide_result, execute_result=None,
+                cash=25000.0):
     """Run main.tick() fully mocked; return the logged entry."""
     monkeypatch.setattr(config, "RISK_STATE_FILE",
                         os.path.join(str(tmp_path), "risk_state.json"))
@@ -23,6 +24,7 @@ def _quiet_tick(monkeypatch, tmp_path, decide_result, execute_result=None):
     monkeypatch.setattr(main, "get_sentiment",
                         lambda: {"sentiment": "neutral", "score": 0.5})
     monkeypatch.setattr(main, "get_positions", lambda **kw: {"__ok": True})
+    monkeypatch.setattr(main, "get_balance", lambda coin, **kw: cash)
     monkeypatch.setattr(main, "decide",
                         lambda signals, pos, mem, **kw: decide_result)
     if execute_result is not None:
@@ -108,6 +110,7 @@ def test_tick_halts_after_repeated_broker_failures(monkeypatch, tmp_path):
     monkeypatch.setattr(main, "get_sentiment",
                         lambda: {"sentiment": "neutral", "score": 0.5})
     monkeypatch.setattr(main, "get_positions", lambda **kw: {})  # outage
+    monkeypatch.setattr(main, "get_balance", lambda coin, **kw: 25000.0)
     monkeypatch.setattr(main, "decide",
                         lambda s, p, m, **kw: {"decision": "LONG_RTOKEN",
                                          "confidence": 0.9, "reasoning": "t",
@@ -154,6 +157,36 @@ def test_tracked_book_excludes_dunder_keys(monkeypatch, tmp_path):
                          "reasoning": "t", "scores": {},
                          "engine_used": "test"})
     assert entry["risk"]["decision"] == "HOLD"  # cage saw a clean book
+
+
+def test_tick_logs_wallet_and_balance_change(monkeypatch, tmp_path):
+    main._LAST_WALLET_USD = None
+    try:
+        hold = {"decision": "HOLD", "confidence": 0.0, "reasoning": "t",
+                "scores": {}, "engine_used": "test"}
+        first = _quiet_tick(monkeypatch, tmp_path, hold)
+        assert first["wallet_usd"] == 25000.0
+        assert first["wallet"]["USDT"] == 25000.0
+        assert first["balance_change_usd"] == 0.0  # baseline tick
+        second = _quiet_tick(monkeypatch, tmp_path, hold, cash=25100.0)
+        assert second["wallet_usd"] == 25100.0
+        assert second["balance_change_usd"] == 100.0
+    finally:
+        main._LAST_WALLET_USD = None
+
+
+def test_wallet_snapshot_unknown_on_broker_failure():
+    wallet, total = main._wallet_snapshot({"__error": "down"}, False)
+    assert wallet == {} and total is None
+    assert main._balance_change(None) is None
+
+
+def test_wallet_snapshot_sums_legs_and_cash(monkeypatch):
+    monkeypatch.setattr(main, "get_balance", lambda coin, **kw: 500.0)
+    wallet, total = main._wallet_snapshot(
+        {"BTCUSDT": {"usd": 1000.0}, "__ok": True}, True)
+    assert wallet == {"BTCUSDT": 1000.0, "USDT": 500.0}
+    assert total == 1500.0
 
 
 def _wake_summary(monkeypatch, tmp_path, price, event, sentiment):
@@ -238,6 +271,7 @@ def test_exit_fires_both_legs_simultaneously(monkeypatch, tmp_path):
     monkeypatch.setattr(main, "get_event", lambda: dict(CALM_EVENT))
     monkeypatch.setattr(main, "get_sentiment", lambda: dict(CALM_SENT))
     monkeypatch.setattr(main, "get_positions", lambda **kw: {"__ok": True})
+    monkeypatch.setattr(main, "get_balance", lambda coin, **kw: 25000.0)
     monkeypatch.setattr(main, "decide",
                         lambda s, p, m, **kw: {"decision": "EXIT",
                                                "confidence": 0.9,

@@ -1,0 +1,5 @@
+python-dotenv>=1.0
+pytest>=8.0
+# groq is optional: without it (or without GROQ_API_KEY) the decision
+# engine uses the deterministic backup-rules fallback. Install it for
+# live AI decisions: pip install groq

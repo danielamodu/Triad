@@ -203,6 +203,7 @@ def _live_tick(monkeypatch, tmp_path, live):
     monkeypatch.setattr(main, "get_sentiment",
                         lambda: {"sentiment": "neutral", "score": 0.5})
     monkeypatch.setattr(main, "get_positions", lambda **kw: {"__ok": True})
+    monkeypatch.setattr(main, "get_balance", lambda coin, **kw: 25000.0)
     monkeypatch.setattr(main, "decide",
                         lambda s, p, m, **kw: {"decision": "HOLD", "confidence": 0.0,
                                          "reasoning": "t", "scores": {},
