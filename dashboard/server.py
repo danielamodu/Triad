@@ -23,7 +23,7 @@ import os
 import sys
 import time
 from datetime import datetime, timezone
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BASE_DIR not in sys.path:
@@ -297,7 +297,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main() -> int:
-    server = HTTPServer(("0.0.0.0", PORT), Handler)
+    server = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
     print(f"[dashboard] serving {BASE_DIR} on port {PORT}", flush=True)
     try:
         server.serve_forever()
