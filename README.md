@@ -20,7 +20,7 @@ Triad/
 │   ├── logger.py                  # append_log() -> logs/trades.jsonl (past calls)
 │   ├── signals/
 │   │   ├── price_divergence.py    # RAAPLUSDT vs BTCUSDT 24h gap
-│   │   ├── event_signal.py        # news keyword scan (NEUTRAL fallback)
+│   │   ├── event_signal.py        # RSS crypto headlines + expansion events
 │   │   └── sentiment_signal.py    # sentiment scan + funding-rate proxy
 │   ├── decision/engine.py         # AI decision (Groq) + backup-rules fallback 0.5/0.3/0.2
 │   ├── risk/cage.py               # safety limits: $1000 cap, 5% halt, no doubling

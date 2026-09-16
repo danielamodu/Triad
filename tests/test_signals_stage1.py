@@ -1,4 +1,5 @@
 """Stage 1 signal tests: expansion events and funding z-scores."""
+from src.signals import event_signal
 from src.signals.event_signal import expansion_event
 from src.signals.sentiment_signal import _z_to_score, funding_zscore
 
@@ -55,3 +56,49 @@ def test_funding_zscore_flat_is_zero():
 def test_funding_zscore_thin():
     z, n = funding_zscore([0.0001] * 5)
     assert z == 0.0 and n == 5
+
+
+RSS_DOC = (b'<?xml version="1.0"?><rss version="2.0"><channel>'
+           b'<title>CoinDesk</title>'
+           b'<item><title>Bitcoin ETF approval rally continues</title></item>'
+           b'<item><title>Ethereum upgrade scheduled next week</title></item>'
+           b'</channel></rss>')
+
+
+def test_rss_titles_skips_channel_title():
+    assert event_signal._rss_titles(RSS_DOC) == [
+        "Bitcoin ETF approval rally continues",
+        "Ethereum upgrade scheduled next week"]
+    assert event_signal._rss_titles(b"") == []
+    assert event_signal._rss_titles(b"<not xml") == []
+
+
+def test_get_event_prefers_rss_headlines(monkeypatch):
+    monkeypatch.setattr(event_signal, "_fetch_rss",
+                        lambda: "bitcoin ETF approval rally bull run")
+    monkeypatch.setattr(event_signal, "_fetch_raw", lambda: "")
+
+    def boom(*a, **kw):
+        raise AssertionError("candles must not be fetched")
+    monkeypatch.setattr(event_signal.cli, "candles", boom)
+    out = event_signal.get_event()
+    assert out["signal"] == "BULLISH"
+    assert "rss" in out["reason"]
+
+
+def test_get_event_falls_through_to_expansion(monkeypatch):
+    monkeypatch.setattr(event_signal, "_fetch_rss", lambda: "")
+    monkeypatch.setattr(event_signal, "_fetch_raw", lambda: "")
+    monkeypatch.setattr(event_signal.cli, "candles",
+                        lambda *a, **kw: _calm())
+    assert event_signal.get_event()["signal"] == "NEUTRAL"
+
+
+def test_classify_scales_conviction_with_evidence():
+    assert event_signal._classify("") == ("NEUTRAL", 0.5)
+    # Lone hit: a nudge, never full conviction.
+    assert event_signal._classify("etf approval") == ("BULLISH", 0.6)
+    assert event_signal._classify("hack") == ("BEARISH", 0.4)
+    # Sustained drumbeat: full conviction either way.
+    assert event_signal._classify("rally " * 6) == ("BULLISH", 1.0)
+    assert event_signal._classify("crash " * 6) == ("BEARISH", 0.0)

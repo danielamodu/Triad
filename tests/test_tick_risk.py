@@ -204,6 +204,11 @@ def test_wake_reason_event_needs_conviction(monkeypatch, tmp_path):
     summary = _wake_summary(monkeypatch, tmp_path, CALM_PRICE, cold,
                             CALM_SENT)
     assert summary["wake_reason"] == ""
+    # Bearish reads score below 0.5 by construction; strong ones wake too.
+    dread = {"signal": "BEARISH", "confidence": 0.05}
+    summary = _wake_summary(monkeypatch, tmp_path, CALM_PRICE, dread,
+                            CALM_SENT)
+    assert summary["wake_reason"] == "event"
 
 
 def test_wake_reason_sentiment_extremes(monkeypatch, tmp_path):

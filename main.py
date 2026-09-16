@@ -438,8 +438,11 @@ def wake_reason(price: dict, event: dict, sentiment: dict) -> str:
             conf = float((event or {}).get("confidence", 0.5) or 0.5)
         except (TypeError, ValueError):
             conf = 0.5
+        # Conviction, not raw confidence: bearish reads score below 0.5 by
+        # construction, so a strong event in either direction must wake.
+        conviction = abs(conf - 0.5) * 2
         if str((event or {}).get("signal", "NEUTRAL")).upper() != "NEUTRAL" \
-                and conf >= config.EVENT_WAKE_CONFIDENCE:
+                and conviction >= config.EVENT_WAKE_CONFIDENCE:
             return "event"
         try:
             score = float((sentiment or {}).get("score", 0.5) or 0.5)

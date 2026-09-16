@@ -22,7 +22,7 @@ MIN_TICK_INTERVAL = 60  # floor between ticks even on an event wake
 # Event wake: a tick fires early on any of three reasons (architecture:
 # three wake-ups, not one): price divergence, a high-conviction event
 # signal, or extreme sentiment positioning.
-EVENT_WAKE_CONFIDENCE = 0.75  # event signal confidence that wakes the loop
+EVENT_WAKE_CONFIDENCE = 0.75  # event conviction |conf-0.5|*2 that wakes
 SENTIMENT_WAKE_LO = 0.15  # sentiment score at/below this wakes (extreme fear)
 SENTIMENT_WAKE_HI = 0.85  # sentiment score at/above this wakes (extreme greed)
 
