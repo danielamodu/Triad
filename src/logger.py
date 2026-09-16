@@ -148,14 +148,18 @@ def get_stats(log_path: str = "") -> dict:
     wins = 0
     closes = 0
     for e in entries:
+        action = (e.get("action_taken", None)
+                  if isinstance(e, dict) else None)
+        if isinstance(action, dict) and \
+                action.get("details") == "tick crashed":
+            continue  # hardcoded realized 0.0: neither a close nor an anchor
         try:
             raw = (e.get("realized_pnl", None)
                    if isinstance(e, dict) else None)
             cur = None if raw is None else float(raw)
         except (TypeError, ValueError):
             cur = None
-        acted = isinstance((e or {}).get("action_taken"), dict) and bool(
-            (e or {}).get("action_taken", {}).get("executed"))
+        acted = isinstance(action, dict) and bool(action.get("executed"))
         if cur is not None and prev_realized is not None and acted:
             if cur > prev_realized:
                 wins += 1

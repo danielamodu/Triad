@@ -289,12 +289,11 @@ def test_win_rate_counts_closed_trades(tmp_path):
     rows = [{"realized_pnl": 0.0, "action_taken": {"executed": True}},
             {"realized_pnl": 0.0, "action_taken": {"executed": False}},
             {"realized_pnl": 5.0, "action_taken": {"executed": True}},
-            {"realized_pnl": 5.0, "action_taken": {"executed": True}},
-            {"realized_pnl": 2.0, "action_taken": {"executed": True}},
-            {"realized_pnl": 0.0, "action_taken":  # crashed tick: ignored
-             {"executed": False, "details": "tick crashed"}}]
+            {"realized_pnl": 0.0, "action_taken":  # crashed tick: invisible
+             {"executed": False, "details": "tick crashed"}},
+            {"realized_pnl": 2.0, "action_taken": {"executed": True}}]
     stats = get_stats(_write_log(tmp_path, rows))
-    assert stats["closed_trades"] == 2  # up-step and down-step only
+    assert stats["closed_trades"] == 2  # 0->5 win, 5->2 loss (crash skipped)
     assert stats["win_rate"] == 0.5
     assert get_stats(os.path.join(
         str(tmp_path), "missing.jsonl"))["win_rate"] == 0.0
