@@ -4,15 +4,20 @@
 
 API routes (all GET, read-only, CORS-enabled):
     /state    -> latest log entry as JSON ({} when empty)
-    /logs     -> last 20 log entries as a JSON array
-    /stats    -> get_stats() summary object
-    /equity   -> full equity curve [{t, equity, executed}]
-    /risk     -> risk ledger + gate levels {exposure, realized_pnl,
-                 drawdown_pct, day_loss_pct, limits, broker_streak,
-                 kill_present}
-    /groq     -> last 20 Groq trace rows, prompt/raw truncated
+    /logs     -> last 20 log entries as a JSON array (Past calls)
+    /stats    -> get_stats() summary object (asset / bet / size / profit so far)
+    /equity   -> full profit chart [{t, equity, executed}]
+    /risk     -> safety-limits ledger + gate levels {exposure = bot-deployed
+                 money in play (ledger minus adopted baseline),
+                 exposure_gross + adopted (transparency), realized_pnl,
+                 drawdown_pct (drop from peak), day_loss_pct,
+                 limits, broker_streak (failed orders), kill_present
+                 (Emergency stop)}
+    /groq     -> last 20 AI-check trace rows, prompt/raw truncated
+                 (decided by AI/Backup rules, answer speed = latency_ms)
     /backtest -> cached backtest report ({} when absent)
-    /health   -> {alive, mode, kill_present, last_tick_age_s}
+    /health   -> {alive, mode (Live · practice), kill_present (Emergency stop),
+                 last_tick_age_s (next decision countdown)}
 
 Frontend: when dashboard/dist exists (built Manus bundle), / serves
 it with SPA fallback (/dashboard, /docs -> index.html); otherwise the
@@ -30,7 +35,8 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 import config  # noqa: E402
-from src.logger import _entry_pnl, get_stats  # noqa: E402
+from src.logger import bot_entry_pnl, get_stats  # noqa: E402
+from src.risk.state import bot_exposure  # noqa: E402
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
 LOG_PATH = os.path.join(BASE_DIR, config.LOG_FILE)
@@ -66,10 +72,13 @@ def _read_entries() -> list:
 
 
 def _equity_curve() -> list:
-    """Full equity curve for the hero chart. Never raises."""
+    """Full profit chart (bot-attributed all-time PnL) for the hero chart.
+
+    Adopted wallet drift is excluded via bot_entry_pnl so the chart
+    tracks trading performance. Never raises."""
     try:
         return [{"t": e.get("timestamp", ""),
-                 "equity": round(_entry_pnl(e), 4),
+                 "equity": round(bot_entry_pnl(e), 4),
                  "executed": bool((e.get("action_taken") or {})
                                   .get("executed", False))}
                 for e in _read_entries()]
@@ -78,7 +87,11 @@ def _equity_curve() -> list:
 
 
 def _risk_view() -> dict:
-    """Ledger + gate levels for the risk panel. Never raises."""
+    """Ledger + gate levels for the risk panel. Never raises.
+
+    exposure is bot-deployed money (ledger minus adopted baseline);
+    exposure_gross/adopted are included for transparency. Gates keep
+    reading the full ledger; this is the display basis."""
     view: dict = {"exposure": {}, "realized_pnl": 0.0,
                   "drawdown_pct": 0.0, "day_loss_pct": 0.0,
                   "broker_streak": 0,
@@ -91,7 +104,11 @@ def _risk_view() -> dict:
         with open(config.RISK_STATE_FILE, encoding="utf-8") as fh:
             state = json.load(fh)
         if isinstance(state, dict):
-            view["exposure"] = state.get("exposure", {}) or {}
+            view["exposure"] = bot_exposure(state)
+            gross = state.get("exposure", {}) or {}
+            view["exposure_gross"] = gross if isinstance(gross, dict) else {}
+            adopted = state.get("adopted", {}) or {}
+            view["adopted"] = adopted if isinstance(adopted, dict) else {}
             view["realized_pnl"] = float(state.get("realized_pnl", 0.0)
                                         or 0.0)
             view["broker_streak"] = int(state.get("broker_fail_streak", 0)
@@ -114,7 +131,7 @@ def _risk_view() -> dict:
                 base = max(float(config.RISK_MAX_POSITION_USD), peak_exp,
                            1e-9)
                 view["day_loss_pct"] = round(
-                    (start - _entry_pnl(entries[-1])) / base, 6)
+                    (start - bot_entry_pnl(entries[-1])) / base, 6)
             except (OSError, ValueError, TypeError):
                 pass
     except (TypeError, ValueError):

@@ -84,6 +84,37 @@ def _entry_pnl(entry: dict) -> float:
     return 0.0
 
 
+def bot_entry_pnl(entry: dict) -> float:
+    """Bot-attributed all-time PnL for one log entry: realized closes plus
+    unrealized on bot-opened legs only.
+
+    Adopted (reconciled) wallet legs are excluded — their price drift is
+    not trading performance. Entries without a usable positions list
+    report realized closes only. Never raises."""
+    try:
+        entry = entry if isinstance(entry, dict) else {}
+        try:
+            realized = float(entry.get("realized_pnl", 0.0) or 0.0)
+        except (TypeError, ValueError):
+            realized = 0.0
+        positions = entry.get("positions")
+        if isinstance(positions, dict):
+            positions = list(positions.values())
+        if not isinstance(positions, list):
+            return round(realized, 4)  # no legs recorded: closed P&L only
+        bot_open = 0.0
+        for pos in positions:
+            if not isinstance(pos, dict) or pos.get("reconciled"):
+                continue
+            try:
+                bot_open += float(pos.get("pnl", 0) or 0)
+            except (TypeError, ValueError):
+                continue
+        return round(realized + bot_open, 4)
+    except Exception:
+        return 0.0
+
+
 def get_stats(log_path: str = "") -> dict:
     """Summary stats over all entries in logs/trades.jsonl.
 
@@ -91,11 +122,11 @@ def get_stats(log_path: str = "") -> dict:
     total_pnl, max_drawdown, sharpe_estimate, first_tick, last_tick}.
 
     total_trades counts ticks with an executed action. win_rate is the
-    share of executed ticks sitting in profit (_entry_pnl > 0). total_pnl
-    is the last running_pnl. max_drawdown is the largest peak-to-trough
-    drop of the pnl curve (>= 0). sharpe_estimate is mean/std of
-    per-tick pnl deltas scaled by sqrt(N). Missing/empty log returns
-    zeros with "" timestamps. Never raises on corrupt lines.
+    share of executed ticks sitting in bot profit (bot_entry_pnl > 0).
+    total_pnl is the last bot-attributed PnL. max_drawdown is the largest
+    peak-to-trough drop of the bot pnl curve (>= 0). sharpe_estimate is
+    mean/std of per-tick pnl deltas scaled by sqrt(N). Missing/empty log
+    returns zeros with "" timestamps. Never raises on corrupt lines.
     """
     entries = _read_entries(log_path)
     total_ticks = len(entries)
@@ -112,7 +143,7 @@ def get_stats(log_path: str = "") -> dict:
     wins = sum(1 for e in entries
                if isinstance(e.get("action_taken"), dict)
                and e["action_taken"].get("executed")
-               and _entry_pnl(e) > 0)
+               and bot_entry_pnl(e) > 0)
     win_rate = round(wins / total_trades, 4) if total_trades else 0.0
 
     confs = []
@@ -124,7 +155,7 @@ def get_stats(log_path: str = "") -> dict:
             continue
     avg_confidence = round(sum(confs) / len(confs), 4) if confs else 0.0
 
-    curve = [_entry_pnl(e) for e in entries]
+    curve = [bot_entry_pnl(e) for e in entries]
     total_pnl = round(curve[-1], 4)
 
     peak = curve[0]

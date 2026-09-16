@@ -5,7 +5,7 @@ import os
 import config
 import main
 from src.decision import engine
-from src.logger import _entry_pnl, append_jsonl
+from src.logger import _entry_pnl, append_jsonl, bot_entry_pnl
 from src.risk import state as risk_state
 
 
@@ -23,6 +23,7 @@ def test_state_carries_new_fields_with_defaults(tmp_path):
                    "broker_fail_streak": 0}, fh)
     st2, ok2 = risk_state.load_state(target)
     assert ok2 is True and st2["realized_pnl"] == 0.0
+    assert st2["adopted"] == {}
 
 
 def test_add_realized_accumulates():
@@ -204,6 +205,29 @@ def test_tick_logs_equity_fields(monkeypatch, tmp_path):
 def test_entry_pnl_prefers_equity(tmp_path):
     assert _entry_pnl({"equity_pnl": 5.0, "running_pnl": 1.0}) == 5.0
     assert _entry_pnl({"running_pnl": 1.0}) == 1.0  # old entries unchanged
+
+
+def test_bot_entry_pnl_excludes_reconciled_legs():
+    entry = {"realized_pnl": -9.0,
+             "positions": [
+                 {"symbol": "BTCUSDT", "pnl": -114.0, "reconciled": True},
+                 {"symbol": "RAAPLUSDT", "pnl": 4.5}]}
+    assert bot_entry_pnl(entry) == -4.5  # -9 + 4.5, adopted drift excluded
+    assert bot_entry_pnl({"realized_pnl": 2.0}) == 2.0  # no legs, all closed
+    assert bot_entry_pnl({}) == 0.0
+    assert bot_entry_pnl(None) == 0.0
+
+
+def test_bot_running_pnl_excludes_reconciled():
+    main.OPEN_POSITIONS.clear()
+    try:
+        main.OPEN_POSITIONS["BTCUSDT"] = {"symbol": "BTCUSDT", "pnl": -114.0,
+                                          "reconciled": True}
+        main.OPEN_POSITIONS["RAAPLUSDT"] = {"symbol": "RAAPLUSDT", "pnl": 4.5}
+        assert main._running_pnl() == -109.5  # gates keep the full basis
+        assert main._bot_running_pnl() == 4.5  # display uses the bot basis
+    finally:
+        main.OPEN_POSITIONS.clear()
 
 
 def test_sync_positions_partial_close_keeps_residual():

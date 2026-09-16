@@ -1,4 +1,4 @@
-"""Persisted risk state: the cage's memory across restarts.
+"""Persisted safety-limits state (code name: risk state, the cage's memory).
 
 Stored at config.RISK_STATE_FILE (logs/risk_state.json), written
 atomically (tmp file + os.replace) so a crash can never leave half
@@ -12,6 +12,8 @@ a JSON document behind. Schema (version 1):
   day_start_pnl: float          running_pnl at the first tick of `day`
   broker_fail_streak: int       consecutive ticks the broker snapshot failed
   realized_pnl: float           cumulative closed-trade PnL (USD)
+  adopted: {SYMBOL: usd}        pre-existing wallet funds absorbed at boot
+                                (reconcile baseline, never bot-deployed)
   groq_streak: int              consecutive Groq-vs-fallback disagreements
   groq_cooldown: int            remaining forced-fallback ticks (drift breaker)
 
@@ -36,8 +38,30 @@ def fresh_state() -> dict:
     """Blank state. Never raises."""
     return {"version": VERSION, "exposure": {}, "peak_pnl": 0.0,
             "peak_exposure_usd": 0.0, "day": "", "day_start_pnl": 0.0,
-            "broker_fail_streak": 0, "realized_pnl": 0.0, "groq_streak": 0,
+            "broker_fail_streak": 0, "realized_pnl": 0.0,
+            "adopted": {}, "groq_streak": 0,
             "groq_cooldown": 0}
+
+
+def bot_exposure(state: dict) -> dict:
+    """Bot-deployed exposure per symbol: ledger exposure minus the
+    adopted (pre-existing wallet) baseline, floored at 0 per symbol.
+
+    Gates keep reading the full ledger; this is the display/attribution
+    basis (money-in-play card). Never raises."""
+    try:
+        exp = (state or {}).get("exposure") or {}
+        base = (state or {}).get("adopted") or {}
+        out: dict = {}
+        for sym, val in exp.items():
+            try:
+                net = float(val or 0.0) - float(base.get(sym, 0.0) or 0.0)
+            except (TypeError, ValueError):
+                continue
+            out[str(sym).upper()] = round(max(0.0, net), 4)
+        return out
+    except Exception:
+        return {}
 
 
 def _coerce(raw) -> dict | None:
@@ -47,7 +71,18 @@ def _coerce(raw) -> dict | None:
     try:
         exposure = {str(k).upper(): float(v)
                     for k, v in (raw.get("exposure") or {}).items()}
+        adopted = {str(k).upper(): float(v)
+                   for k, v in (raw.get("adopted") or {}).items()}
         return {"version": VERSION, "exposure": exposure,
+                "peak_pnl": float(raw.get("peak_pnl", 0.0)),
+                "peak_exposure_usd": float(
+                    raw.get("peak_exposure_usd", 0.0)),
+                "day": str(raw.get("day", "") or ""),
+                "day_start_pnl": float(raw.get("day_start_pnl", 0.0)),
+                "broker_fail_streak": int(
+                    raw.get("broker_fail_streak", 0)),
+                "realized_pnl": float(raw.get("realized_pnl", 0.0) or 0.0),
+                "adopted": adopted,
                 "peak_pnl": float(raw.get("peak_pnl", 0.0)),
                 "peak_exposure_usd": float(
                     raw.get("peak_exposure_usd", 0.0)),

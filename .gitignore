@@ -17,3 +17,5 @@ backtest/data/
 
 # Built frontend bundle (shipped to dashboard/dist on the box, never committed)
 dashboard/dist/
+
+.vercel

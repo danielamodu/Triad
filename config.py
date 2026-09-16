@@ -16,7 +16,7 @@ BITGET_API_KEY = os.environ.get("BITGET_API_KEY", "").strip()
 BITGET_SECRET_KEY = os.environ.get("BITGET_SECRET_KEY", "").strip()
 BITGET_PASSPHRASE = os.environ.get("BITGET_PASSPHRASE", "").strip()
 
-# ── Loop ─────────────────────────────────────────────────────────
+# ── Loop (dashboard: next decision countdown) ──────────────────
 HEARTBEAT_INTERVAL = 300  # 5 minutes between calm ticks
 MIN_TICK_INTERVAL = 60  # floor between ticks even on divergence wake
 
@@ -59,8 +59,8 @@ def live_trading_enabled(cli_live_flag: bool) -> tuple:
 LOG_FILE = "logs/trades.jsonl"
 KILL_FILE = os.path.join(BASE_DIR, "logs", "KILL")  # create to halt trading
 
-# ── Risk ─────────────────────────────────────────────────────────
-RISK_MAX_POSITION_USD = 1000
+# ── Safety limits (dashboard: Safety limits; code name: risk) ──
+RISK_MAX_POSITION_USD = 1000  # max single bet (money in play per asset)
 RISK_MAX_DRAWDOWN_PCT = 0.05
 RISK_MAX_DAILY_LOSS_PCT = 0.02  # halt new trading for the rest of the UTC day
 RISK_BROKER_FAIL_TICKS = 3  # consecutive failed broker snapshots -> halt
@@ -70,7 +70,7 @@ RISK_MAX_PRICE_DRIFT_PCT = 0.01  # abort if mark moved >1% since the signal
 # ── Signals ──────────────────────────────────────────────────────
 DIVERGENCE_THRESHOLD = 0.015  # 1.5pp gap between rToken and BTC 24h change
 
-# ── LLM decision engine (Groq) ───────────────────────────────────
+# ── AI decision (dashboard: AI check; code name: Groq) ──────────
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
 # NOTE: llama-3.1-8b-instant was retired by Groq (404). Current pick
 # verified against the live /models list.

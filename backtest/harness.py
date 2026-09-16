@@ -7,8 +7,8 @@ What it replays for real (same code as production):
   - price-divergence math (gap, direction, threshold)
   - weighted_decision() scorer (Groq excluded: non-deterministic)
   - confidence sizing buckets (parametrized for the sweep)
-  - the risk cage (validate) with a real ledger (state.py math):
-    no-doubling exposure, drawdown halt, daily-loss halt
+  - the safety limits (code name: risk cage, validate) with a real ledger (state.py math):
+    no-doubling money in play, drop-from-peak halt, daily-loss halt
   - event detection (expansion_event) and positioning sentiment
     (funding z-score + perp basis) when --with-overlays is given;
     otherwise both stay fixed neutral (legacy behavior, and what the

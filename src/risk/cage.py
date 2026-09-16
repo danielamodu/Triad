@@ -1,4 +1,4 @@
-"""Risk cage: hard gates every decision must pass.
+"""Safety limits (code name: risk cage): hard gates every decision must pass.
 
 Rules:
   1. Max single position RISK_MAX_POSITION_USD (default $1000), counted

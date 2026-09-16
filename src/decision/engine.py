@@ -1,4 +1,4 @@
-"""Decision engine: Groq LLM primary, weighted scorer fallback.
+"""Decision engine: AI (Groq LLM) primary, backup-rules fallback.
 
 decide(signals, positions=None, memory=None) returns
 {decision, confidence, reasoning, scores, engine_used} where engine_used

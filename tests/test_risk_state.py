@@ -114,3 +114,28 @@ def test_iter_fills_skips_garbage():
                                    "side": "buy", "notional_usdt": "bad"}))
     assert fills == []
     assert config.RISK_MAX_POSITION_USD == 1000  # base assumption documented
+
+
+def test_adopted_baseline_roundtrips(tmp_path):
+    target = os.path.join(str(tmp_path), "risk_state.json")
+    st, _ = state.load_state(target)
+    assert st["adopted"] == {}
+    st["exposure"] = {"BTCUSDT": 338328.0}
+    st["adopted"] = {"BTCUSDT": 337516.0}
+    assert state.save_state(st, target) is True
+    reloaded, ok = state.load_state(target)
+    assert ok is True
+    assert reloaded["adopted"] == {"BTCUSDT": 337516.0}
+
+
+def test_bot_exposure_nets_out_adopted():
+    st = state.fresh_state()
+    st["exposure"] = {"BTCUSDT": 338328.0, "RAAPLUSDT": 1000.0}
+    st["adopted"] = {"BTCUSDT": 337516.0}
+    assert state.bot_exposure(st) == {"BTCUSDT": 812.0, "RAAPLUSDT": 1000.0}
+    # Bot sales of adopted funds never go negative.
+    st["exposure"] = {"BTCUSDT": 300000.0}
+    assert state.bot_exposure(st) == {"BTCUSDT": 0.0}
+    # Missing baseline degrades to the full ledger.
+    assert state.bot_exposure({"exposure": {"X": 5.0}}) == {"X": 5.0}
+    assert state.bot_exposure({}) == {}

@@ -1,4 +1,5 @@
-"""Triad heartbeat loop: 3 signals -> decision -> risk cage -> execute.
+"""Triad decision loop (code name: heartbeat): 3 signals -> AI/backup decision
+-> safety limits (code name: risk cage) -> execute.
 
     python main.py            # loop forever, 300s between ticks
     python main.py --once     # single tick, then exit (testing)
@@ -27,10 +28,10 @@ from src.signals.sentiment_signal import get_sentiment
 
 SYMBOLS = [config.RTOKEN_SYMBOL, config.CRYPTO_SYMBOL]
 
-# ── Risk-ledger persistence ───────────────────────────────────────
+# ── Safety-ledger persistence (code: risk state) ────────────────
 # Tracks whether the last risk-state save succeeded. A failed save
-# fails the cage closed on the next tick (stale exposure must never
-# silently permit a new position).
+# fails the safety limits closed on the next tick (stale money in play
+# must never silently permit a new bet).
 _STATE_SAVE_OK = True
 
 # ── Agent memory (short-term) ─────────────────────────────────────
@@ -325,6 +326,24 @@ def _running_pnl() -> float:
     return round(total, 4)
 
 
+def _bot_running_pnl() -> float:
+    """Unrealized PnL on bot-opened legs only.
+
+    Adopted (reconciled) wallet funds are excluded: their price drift is
+    not bot performance. Display/attribution basis; gates keep using the
+    full-ledger _running_pnl so safety behavior is unchanged. Never
+    raises."""
+    total = 0.0
+    for pos in OPEN_POSITIONS.values():
+        try:
+            if isinstance(pos, dict) and pos.get("reconciled"):
+                continue
+            total += float(pos.get("pnl", 0) or 0)
+        except (TypeError, ValueError):
+            continue
+    return round(total, 4)
+
+
 def _executed_notional(action_taken: dict) -> float:
     """Gross USD actually filled by an action (0.0 unless executed).
 
@@ -434,6 +453,7 @@ def reconcile_startup(live: bool) -> dict:
         pass
     try:
         exposure = rstate.setdefault("exposure", {})
+        adopted_base = rstate.setdefault("adopted", {})
         for symbol in (config.RTOKEN_SYMBOL, config.CRYPTO_SYMBOL):
             try:
                 usd = float((account.get(symbol, {}) or {}).get("usd", 0)
@@ -454,6 +474,14 @@ def reconcile_startup(live: bool) -> dict:
                 prior = 0.0
             if usd > prior:
                 exposure[symbol] = round(usd, 4)
+                # Adopted baseline: only the NEW external funds count.
+                # Anything already in the ledger is bot-deployed money and
+                # must never be re-labelled as adopted on a later reboot.
+                try:
+                    have = float(adopted_base.get(symbol, 0.0) or 0.0)
+                except (TypeError, ValueError):
+                    have = 0.0
+                adopted_base[symbol] = round(max(have, usd - prior), 4)
             report["adopted"].append({"symbol": symbol,
                                       "usd": round(usd, 4),
                                       "ledger_was": round(prior, 4)})
@@ -529,8 +557,8 @@ def tick(live: bool = False) -> dict:
         print("[triad] WARNING: risk state save failed; "
               "cage fails closed next tick.", flush=True)
 
-    # Merge broker snapshot with tracked legs so the decision engine
-    # and risk cage see live prices + pnl each tick (tracked wins).
+    # Merge broker snapshot with tracked open trades so the decision
+    # engine and safety limits see live prices + profit each tick.
     # Dunder keys (__ok, __error) are account metadata, not positions.
     tracked = {k: v for k, v in (account.items()
                if isinstance(account, dict) else [])
@@ -622,7 +650,11 @@ def tick(live: bool = False) -> dict:
     realized_total = risk_state.add_realized(rstate, closed_pnl)
     _update_positions(price)
     running_pnl = _running_pnl()
-    equity_pnl = round(running_pnl + realized_total, 4)
+    # Profit card basis: bot-attributed all-time P&L (realized closes +
+    # unrealized on bot-opened legs). Adopted wallet drift is excluded so
+    # the card tracks trading performance, not BTC price moves. Gates
+    # above deliberately keep the full-ledger basis.
+    equity_pnl = round(_bot_running_pnl() + realized_total, 4)
     memory_summary = _memory_context(3)
     executed_notional_usd = _executed_notional(action_taken)
     fees_usd = _action_fees(action_taken)
@@ -733,6 +765,7 @@ def main() -> int:
             traceback.print_exc()
             try:
                 crash_pnl = _running_pnl()
+                crash_bot = _bot_running_pnl()
                 append_log({"signal_inputs": {}, "decision": {},
                             "action_taken": {"executed": False,
                                              "details": "tick crashed"},
@@ -740,7 +773,7 @@ def main() -> int:
                             "positions": list(OPEN_POSITIONS.values()),
                             "running_pnl": crash_pnl,
                             "realized_pnl": 0.0,
-                            "equity_pnl": crash_pnl,
+                            "equity_pnl": crash_bot,
                             "position_size_usd": 0.0,
                             "executed_notional_usd": 0.0,
                             "fees_usd": 0.0,

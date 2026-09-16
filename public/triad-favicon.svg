@@ -1,0 +1,9 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>Triad</title>
+  <rect width="64" height="64" rx="16" fill="#07162F"/>
+  <g transform="translate(15 14) skewX(-18)">
+    <rect x="2" y="18" width="8" height="20" rx="4" fill="#4C8DFF"/>
+    <rect x="16" y="9" width="8" height="29" rx="4" fill="#6EA2FF"/>
+    <rect x="30" y="0" width="8" height="38" rx="4" fill="#C7DEFF"/>
+  </g>
+</svg>

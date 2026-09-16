@@ -38,6 +38,27 @@ def test_adopts_unknown_broker_balance_and_seeds_ledger(tmp_path, monkeypatch):
     loaded, ok = risk_state.load_state(
         os.path.join(str(tmp_path), "risk_state.json"))
     assert ok is True and loaded["exposure"] == {"BTCUSDT": 500.0}
+    assert loaded["adopted"] == {"BTCUSDT": 500.0}  # external baseline kept
+
+
+def test_boot_never_marks_bot_money_adopted(tmp_path, monkeypatch):
+    _boot(monkeypatch, tmp_path, {"BTCUSDT": {"usd": 500.0}, "__ok": True})
+    target = os.path.join(str(tmp_path), "risk_state.json")
+    st, _ = risk_state.load_state(target)
+    # Bot deploys 1000 of its own on a new symbol, then reboots with the
+    # broker showing it: ledger money is not external funds.
+    risk_state.record_fills(st, {"executed": True, "symbol": "RAAPLUSDT",
+                                 "side": "buy", "notional_usdt": 1000.0})
+    assert risk_state.save_state(st, target) is True
+    monkeypatch.setattr(main, "get_positions",
+                        lambda **kw: {"RAAPLUSDT": {"usd": 1000.0},
+                                      "__ok": True})
+    main.OPEN_POSITIONS.clear()
+    main.reconcile_startup(False)
+    main.OPEN_POSITIONS.clear()
+    reloaded, _ = risk_state.load_state(target)
+    assert reloaded["exposure"]["RAAPLUSDT"] == 1000.0
+    assert reloaded["adopted"].get("RAAPLUSDT", 0.0) == 0.0
 
 
 def test_second_boot_does_not_double_seed(tmp_path, monkeypatch):

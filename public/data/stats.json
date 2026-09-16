@@ -1,0 +1,11 @@
+{
+  "total_ticks": 811,
+  "total_trades": 33,
+  "win_rate": 0.3939,
+  "avg_confidence": 0.5755,
+  "total_pnl": -123.6788,
+  "max_drawdown": 3202.5171,
+  "sharpe_estimate": -0.0288,
+  "first_tick": "2026-09-15T23:28:57.956177+00:00",
+  "last_tick": "2026-09-16T13:12:09.511452+00:00"
+}

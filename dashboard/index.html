@@ -7,18 +7,42 @@
 <style>
   body { font-family: monospace; background: #0d1117; color: #c9d1d9; margin: 2em; }
   h1 { color: #58a6ff; }
+  h2 { color: #8b949e; font-size: 1em; margin-top: 2em; }
+  nav { display: flex; gap: 1.5em; margin: 1em 0; color: #8b949e; }
+  nav span { white-space: nowrap; }
   pre { background: #161b22; padding: 1em; overflow: auto; border-radius: 6px; }
   .row { display: flex; gap: 1em; flex-wrap: wrap; }
   .card { flex: 1 1 300px; }
+  .badge { color: #3fb950; }
 </style>
 </head>
 <body>
 <h1>Triad Dashboard</h1>
+<nav>
+  <span>Trades</span>
+  <span>AI check</span>
+  <span>Past calls</span>
+  <span>Safety limits</span>
+  <span>Profit chart</span>
+</nav>
+<p>
+  <span id="mode" class="badge">Live · practice</span>
+  · next decision countdown: <span id="countdown">—</span>
+  · <span id="safety">within safe limits</span>
+</p>
 <div class="row">
-  <div class="card"><h2>Stats (/stats)</h2><pre id="stats">loading…</pre></div>
-  <div class="card"><h2>State (/state)</h2><pre id="state">loading…</pre></div>
+  <div class="card"><h2>Profit (profit chart)</h2><pre id="equity">loading…</pre></div>
+  <div class="card"><h2>Money in play (open)</h2><pre id="risk">loading…</pre></div>
 </div>
-<h2>Logs (/logs, last 20)</h2>
+<div class="row">
+  <div class="card"><h2>Safety check passed? (Safety limits)</h2><pre id="state">loading…</pre></div>
+  <div class="card"><h2>Decided by AI / Backup rules (AI check)</h2><pre id="groq">loading…</pre></div>
+</div>
+<div class="row">
+  <div class="card"><h2>Stats — asset / bet / size / profit so far</h2><pre id="stats">loading…</pre></div>
+  <div class="card"><h2>Health — failed orders · Emergency stop · answer speed</h2><pre id="health">loading…</pre></div>
+</div>
+<h2>Past calls — picked by AI/backup, safety passed, profit (See details)</h2>
 <pre id="logs">loading…</pre>
 <script>
 async function load(id, path) {
@@ -30,10 +54,27 @@ async function load(id, path) {
     document.getElementById(id).textContent = "error: " + e;
   }
 }
-load("stats", "/stats");
-load("state", "/state");
-load("logs", "/logs");
-setInterval(() => { load("stats", "/stats"); load("state", "/state"); load("logs", "/logs"); }, 10000);
+async function refresh() {
+  load("stats", "/stats");
+  load("state", "/state");
+  load("logs", "/logs");
+  load("risk", "/risk");
+  load("groq", "/groq");
+  load("equity", "/equity");
+  load("health", "/health");
+  try {
+    const r = await fetch("/health");
+    const h = await r.json();
+    document.getElementById("mode").textContent =
+      h.mode === "live" ? "Live" : "Live · practice";
+    document.getElementById("safety").textContent =
+      h.kill_present ? "Emergency stop ON" : "within safe limits";
+    document.getElementById("countdown").textContent =
+      h.last_tick_age_s >= 0 ? h.last_tick_age_s + "s since last decision" : "—";
+  } catch (e) { /* keep defaults */ }
+}
+refresh();
+setInterval(refresh, 10000);
 </script>
 </body>
 </html>
