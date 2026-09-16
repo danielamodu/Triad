@@ -122,8 +122,9 @@ def get_stats(log_path: str = "") -> dict:
     total_pnl, max_drawdown, sharpe_estimate, first_tick, last_tick}.
 
     total_trades counts ticks with an executed action. win_rate is the
-    share of CLOSED trades that were winners: a close is a tick where
-    cumulative realized_pnl moved, a win is a step up. (Per-tick
+    share of CLOSED trades that were winners: a close is an executed tick
+    where cumulative realized_pnl moved (this also filters out crashed
+    ticks, which hardcode realized 0.0), a win is a step up. (Per-tick
     in-profit share would sit near zero while all-time is negative, so
     it would punish honesty.) total_pnl is the last bot-attributed PnL.
     max_drawdown is the largest peak-to-trough drop of the bot pnl curve
@@ -153,7 +154,9 @@ def get_stats(log_path: str = "") -> dict:
             cur = None if raw is None else float(raw)
         except (TypeError, ValueError):
             cur = None
-        if cur is not None and prev_realized is not None:
+        acted = isinstance((e or {}).get("action_taken"), dict) and bool(
+            (e or {}).get("action_taken", {}).get("executed"))
+        if cur is not None and prev_realized is not None and acted:
             if cur > prev_realized:
                 wins += 1
                 closes += 1
