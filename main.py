@@ -18,7 +18,7 @@ import config
 from src import cli
 from src.decision.engine import decide
 from src.execution.executor import execute, get_positions, size_for_confidence
-from src.logger import append_jsonl, append_log
+from src.logger import _read_entries, append_jsonl, append_log
 from src.risk import state as risk_state
 from src.risk.cage import validate
 from src.risk.state import iter_fills
@@ -360,6 +360,37 @@ def _executed_notional(action_taken: dict) -> float:
         return 0.0
 
 
+def _fills_net() -> dict:
+    """Net executed notional per symbol over the whole trade log.
+
+    Buys add, sells subtract: the bot's own deployed inventory, with no
+    adopted wallet funds in it (those never appear as fills). Basis for
+    the legacy adopted-baseline repair below. Never raises."""
+    net: dict = {}
+    try:
+        entries = _read_entries()
+    except Exception:
+        return net
+    try:
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            action = entry.get("action_taken") or {}
+            for symbol, side, notional, executed in iter_fills(action):
+                if not executed:
+                    continue
+                try:
+                    delta = float(notional or 0.0)
+                except (TypeError, ValueError):
+                    continue
+                key = str(symbol).upper()
+                net[key] = net.get(key, 0.0) + (
+                    delta if side == "buy" else -delta)
+    except Exception:
+        pass
+    return net
+
+
 def _action_fees(action_taken: dict) -> float:
     """Total broker fees (USD-ish) reported by executed legs. Never raises."""
     try:
@@ -485,6 +516,25 @@ def reconcile_startup(live: bool) -> dict:
             report["adopted"].append({"symbol": symbol,
                                       "usd": round(usd, 4),
                                       "ledger_was": round(prior, 4)})
+        # One-time repair: ledgers seeded before the adopted baseline
+        # existed hold pre-existing funds with no baseline entry. The trade
+        # log tells them apart: ledger value minus the bot's own net fills
+        # is the external money (fills only ever record bot actions).
+        # Symbols with a baseline already are never touched.
+        try:
+            fills = _fills_net()
+        except Exception:
+            fills = {}
+        for symbol in list(exposure.keys()):
+            try:
+                if symbol in adopted_base:
+                    continue
+                led = float(exposure.get(symbol, 0.0) or 0.0)
+                net = float(fills.get(str(symbol).upper(), 0.0) or 0.0)
+            except (TypeError, ValueError):
+                continue
+            if led > 0:
+                adopted_base[symbol] = round(max(0.0, led - net), 4)
         total = sum(abs(v) for v in exposure.values()
                     if isinstance(v, (int, float)))
         if total > float(rstate.get("peak_exposure_usd", 0.0) or 0.0):

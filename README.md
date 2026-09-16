@@ -112,7 +112,9 @@ pick. Safety check passed = safety limits approved the pick.
    peak-to-current) or 2% daily loss. Pre-existing wallet funds found
    at boot are recorded separately (`adopted` baseline) so the
    money-in-play card and profit curve only ever count what the bot
-   deployed — gates still read the full ledger. Halts block new
+   deployed — ledgers seeded before this existed get the baseline
+   backfilled once as ledger-minus-logged-fills. Gates still read
+   the full ledger. Halts block new
    entries only — exits always pass (safety check passed) so a halt
    can never trap a trade; the emergency-stop file (`logs/KILL`) is
    the manual halt.
