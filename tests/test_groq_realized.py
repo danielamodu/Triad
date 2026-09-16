@@ -5,7 +5,7 @@ import os
 import config
 import main
 from src.decision import engine
-from src.logger import _entry_pnl, append_jsonl, bot_entry_pnl
+from src.logger import _entry_pnl, append_jsonl, bot_entry_pnl, get_stats
 from src.risk import state as risk_state
 
 
@@ -275,3 +275,24 @@ def test_append_jsonl_writes_scrubbed(tmp_path):
     with open(path, encoding="utf-8") as fh:
         row = json.loads(fh.read().strip())
     assert row["a"] == 1 and row["APIKEY"] == "***" and "timestamp" in row
+
+
+def _write_log(tmp_path, rows):
+    target = os.path.join(str(tmp_path), "t.jsonl")
+    with open(target, "w", encoding="utf-8") as fh:
+        for row in rows:
+            fh.write(json.dumps(row) + "\n")
+    return target
+
+
+def test_win_rate_counts_closed_trades(tmp_path):
+    rows = [{"realized_pnl": 0.0, "action_taken": {"executed": True}},
+            {"realized_pnl": 0.0, "action_taken": {"executed": False}},
+            {"realized_pnl": 5.0, "action_taken": {"executed": True}},
+            {"realized_pnl": 5.0, "action_taken": {"executed": True}},
+            {"realized_pnl": 2.0, "action_taken": {"executed": True}}]
+    stats = get_stats(_write_log(tmp_path, rows))
+    assert stats["closed_trades"] == 2  # up-step and down-step only
+    assert stats["win_rate"] == 0.5
+    assert get_stats(os.path.join(
+        str(tmp_path), "missing.jsonl"))["win_rate"] == 0.0

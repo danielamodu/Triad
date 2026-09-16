@@ -122,11 +122,14 @@ def get_stats(log_path: str = "") -> dict:
     total_pnl, max_drawdown, sharpe_estimate, first_tick, last_tick}.
 
     total_trades counts ticks with an executed action. win_rate is the
-    share of executed ticks sitting in bot profit (bot_entry_pnl > 0).
-    total_pnl is the last bot-attributed PnL. max_drawdown is the largest
-    peak-to-trough drop of the bot pnl curve (>= 0). sharpe_estimate is
-    mean/std of per-tick pnl deltas scaled by sqrt(N). Missing/empty log
-    returns zeros with "" timestamps. Never raises on corrupt lines.
+    share of CLOSED trades that were winners: a close is a tick where
+    cumulative realized_pnl moved, a win is a step up. (Per-tick
+    in-profit share would sit near zero while all-time is negative, so
+    it would punish honesty.) total_pnl is the last bot-attributed PnL.
+    max_drawdown is the largest peak-to-trough drop of the bot pnl curve
+    (>= 0). sharpe_estimate is mean/std of per-tick pnl deltas scaled by
+    sqrt(N). Missing/empty log returns zeros with "" timestamps. Never
+    raises on corrupt lines.
     """
     entries = _read_entries(log_path)
     total_ticks = len(entries)
@@ -134,17 +137,31 @@ def get_stats(log_path: str = "") -> dict:
         return {"total_ticks": 0, "total_trades": 0, "win_rate": 0.0,
                 "avg_confidence": 0.0, "total_pnl": 0.0,
                 "max_drawdown": 0.0, "sharpe_estimate": 0.0,
-                "first_tick": "", "last_tick": ""}
+                "first_tick": "", "last_tick": "", "closed_trades": 0}
 
     total_trades = sum(1 for e in entries
                        if isinstance(e.get("action_taken"), dict)
                        and e["action_taken"].get("executed"))
 
-    wins = sum(1 for e in entries
-               if isinstance(e.get("action_taken"), dict)
-               and e["action_taken"].get("executed")
-               and bot_entry_pnl(e) > 0)
-    win_rate = round(wins / total_trades, 4) if total_trades else 0.0
+    prev_realized = None
+    wins = 0
+    closes = 0
+    for e in entries:
+        try:
+            raw = (e.get("realized_pnl", None)
+                   if isinstance(e, dict) else None)
+            cur = None if raw is None else float(raw)
+        except (TypeError, ValueError):
+            cur = None
+        if cur is not None and prev_realized is not None:
+            if cur > prev_realized:
+                wins += 1
+                closes += 1
+            elif cur < prev_realized:
+                closes += 1
+        if cur is not None:
+            prev_realized = cur
+    win_rate = round(wins / closes, 4) if closes else 0.0
 
     confs = []
     for e in entries:
@@ -179,4 +196,5 @@ def get_stats(log_path: str = "") -> dict:
             "total_pnl": total_pnl, "max_drawdown": max_drawdown,
             "sharpe_estimate": sharpe_estimate,
             "first_tick": str(entries[0].get("timestamp", "") or ""),
-            "last_tick": str(entries[-1].get("timestamp", "") or "")}
+            "last_tick": str(entries[-1].get("timestamp", "") or ""),
+            "closed_trades": closes}
