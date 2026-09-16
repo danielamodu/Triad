@@ -7,10 +7,10 @@ API routes (all GET, read-only, CORS-enabled):
     /logs     -> last 20 log entries as a JSON array (Past calls)
     /stats    -> get_stats() summary object (asset / bet / size / profit so far)
     /equity   -> full profit chart [{t, equity, executed}]
-    /risk     -> safety-limits ledger + gate levels {exposure = gross open
-                 inventory (money in play), exposure_bot = bot-deployed net,
-                 adopted baseline (transparency), realized_pnl,
-                 drawdown_pct (drop from peak), day_loss_pct,
+    /risk     -> safety-limits ledger + gate levels {exposure = bot-deployed
+                 money in play (same basis the gate enforces),
+                 exposure_gross + adopted + exposure_bot (transparency),
+                 realized_pnl, drawdown_pct (drop from peak), day_loss_pct,
                  limits, broker_streak (failed orders), kill_present
                  (Emergency stop)}
     /groq     -> last 20 AI-check trace rows, prompt/raw truncated
@@ -89,11 +89,10 @@ def _equity_curve() -> list:
 def _risk_view() -> dict:
     """Ledger + gate levels for the risk panel. Never raises.
 
-    exposure is gross open inventory (all capital the bot has working,
-    adopted funds included) — the money-in-play card basis. exposure_bot
-    (ledger minus adopted baseline, floored at 0) and adopted are included
-    for transparency. Gates read the full ledger; profit stays
-    bot-attributed (see bot_entry_pnl)."""
+    exposure is bot-deployed money (ledger minus adopted baseline,
+    floored at 0) — the same basis the no-doubling gate enforces, so the
+    card can never contradict the gate. exposure_gross/adopted are
+    included for transparency. Profit stays bot-attributed."""
     view: dict = {"exposure": {}, "realized_pnl": 0.0,
                   "drawdown_pct": 0.0, "day_loss_pct": 0.0,
                   "broker_streak": 0,
@@ -108,7 +107,7 @@ def _risk_view() -> dict:
         if isinstance(state, dict):
             gross = state.get("exposure", {}) or {}
             gross = gross if isinstance(gross, dict) else {}
-            view["exposure"] = gross
+            view["exposure"] = bot_exposure(state)
             view["exposure_gross"] = gross
             adopted = state.get("adopted", {}) or {}
             view["adopted"] = adopted if isinstance(adopted, dict) else {}

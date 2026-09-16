@@ -182,12 +182,12 @@ pick. Safety check passed = safety limits approved the pick.
    bet, no doubling, halt on 5% drop from peak (`drawdown_pct`,
    peak-to-current) or 2% daily loss. Pre-existing wallet funds found
    at boot are recorded separately (`adopted` baseline) so the
-   money-in-play card shows gross open inventory (everything the bot
-   has working, adopted funds included); `exposure_bot` in the API is
-   the bot-deployed net. Profit and the profit curve count bot
-   performance only — ledgers seeded before this existed get the
-   baseline backfilled once as ledger-minus-logged-fills. Gates still
-   read the full ledger. Halts block new
+   money-in-play card and the no-doubling gate share one basis:
+   ledger-minus-adopted, i.e. only what the bot deployed (gross and
+   adopted stay visible in the API for transparency). Profit and the
+   profit curve count bot performance only — ledgers seeded before
+   this existed get the baseline backfilled once as
+   ledger-minus-logged-fills. Gates read the full ledger. Halts block new
    entries only — exits always pass (safety check passed) so a halt
    can never trap a trade; the emergency-stop file (`logs/KILL`) is
    the manual halt.
