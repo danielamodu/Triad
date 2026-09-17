@@ -83,14 +83,6 @@ def _coerce(raw) -> dict | None:
                     raw.get("broker_fail_streak", 0)),
                 "realized_pnl": float(raw.get("realized_pnl", 0.0) or 0.0),
                 "adopted": adopted,
-                "peak_pnl": float(raw.get("peak_pnl", 0.0)),
-                "peak_exposure_usd": float(
-                    raw.get("peak_exposure_usd", 0.0)),
-                "day": str(raw.get("day", "") or ""),
-                "day_start_pnl": float(raw.get("day_start_pnl", 0.0)),
-                "broker_fail_streak": int(
-                    raw.get("broker_fail_streak", 0)),
-                "realized_pnl": float(raw.get("realized_pnl", 0.0) or 0.0),
                 "groq_streak": int(raw.get("groq_streak", 0) or 0),
                 "groq_cooldown": int(raw.get("groq_cooldown", 0) or 0)}
     except (TypeError, ValueError):

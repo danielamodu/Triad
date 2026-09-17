@@ -35,6 +35,10 @@ import os
 import config
 from src.risk.state import iter_fills
 
+# Dust floor shared with boot reconcile: balances below this are ignored
+# there, so holdings at/below it must not block fresh entries here.
+_DUST_USD = 1.0
+
 
 def bot_exposure(log_path: str = "") -> dict:
     """Net USD exposure per symbol from Triad-executed orders in the log.
@@ -151,7 +155,9 @@ def validate(decision: dict, positions: dict, risk: dict = None,
     else:
         mine = bot_exposure().get(target.upper(), 0.0)
 
-    if mine + config.RISK_MAX_POSITION_USD > config.RISK_MAX_POSITION_USD:
+    # No doubling: one open leg per symbol. Dust-tolerant so rounding
+    # artefacts and tiny partial residuals can't brick fresh entries.
+    if mine > _DUST_USD:
         return {"approved": False, "decision": name,
                 "blocked_reason": "bot holds " + target + " $"
                                   + format(mine, ",.0f")

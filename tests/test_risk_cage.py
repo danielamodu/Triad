@@ -80,6 +80,9 @@ def test_no_doubling_uses_supplied_exposure():
     assert r["approved"] is False and "no doubling" in r["blocked_reason"]
     # A different leg is unaffected.
     assert validate(LONG, {}, ctx, trade_symbol="RNVDAUSDT")["approved"] is True
+    # Dust and rounding artefacts don't brick fresh entries.
+    dusty = {**HEALTHY, "exposure": {"RAAPLUSDT": 0.5}}
+    assert validate(LONG, {}, dusty, trade_symbol="RAAPLUSDT")["approved"] is True
 
 
 def test_sells_pass_size_gates():
