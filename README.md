@@ -16,7 +16,7 @@ call logged and inspectable. Live on EC2, dashboard on Vercel.
   Profit: `/equity` · Safety: `/risk`
 - Verify in 30 seconds:
   `git clone https://github.com/danielamodu/Triad && cd Triad && python -m pytest tests -q`
-  (116 tests, stdlib + pytest only)
+  (120 tests, stdlib + pytest only)
 
 Live snapshot (2026-09-16 21:51 UTC, paper):
 
@@ -222,7 +222,7 @@ pick. Safety check passed = safety limits approved the pick.
     verdict carries its backup-rules agreement and answer speed
     (`latency_ms`), and 5 consecutive AI-vs-backup disagreements force
     the backup rules for 10 ticks (drift breaker).
-12. `python -m pytest tests` — 116 tests covering ledger math, safety
+12. `python -m pytest tests` — 120 tests covering ledger math, safety
     gates, live routing, validation, settlement, startup, and tick
     wiring.
 13. Per-leg brackets (bot-opened legs only): −2% stop / +3% take from
