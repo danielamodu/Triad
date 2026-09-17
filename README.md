@@ -1,4 +1,4 @@
-# Triad — cross-asset execution agent (Bitget AI Hackathon S2, Track 3)
+# Triad — cross-asset execution agent (Bitget AI Hackathon S2 · Agentic Trading → Cross-Asset Execution Agent)
 
 > The only trading agent that distrusts its own AI by design: every call
 > is AI-decided, safety-checked, and audit-logged — and when the AI
@@ -31,7 +31,7 @@ Live snapshot (2026-09-16 21:51 UTC, paper):
 | AI check | drift breaker ENGAGED live (forced backup rules, 9 ticks left) |
 | Loop | 300s countdown, triple wake, 60s floor |
 
-## Track 3 submission mapping
+## Agentic Trading submission mapping (Cross-Asset Execution Agent)
 
 | Handbook requirement | Where it lives |
 |---|---|

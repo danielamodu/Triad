@@ -297,3 +297,16 @@ def test_win_rate_counts_closed_trades(tmp_path):
     assert stats["win_rate"] == 0.5
     assert get_stats(os.path.join(
         str(tmp_path), "missing.jsonl"))["win_rate"] == 0.0
+
+
+def test_stats_totals_turnover_and_fees(tmp_path):
+    rows = [{"executed_notional_usd": 1000.0, "fees_usd": 1.0,
+             "realized_pnl": 0.0, "action_taken": {"executed": True}},
+            {"executed_notional_usd": 500.0, "fees_usd": 0.5,
+             "realized_pnl": 3.0, "action_taken": {"executed": True}},
+            {"action_taken": {"executed": False}}]  # missing keys count 0
+    stats = get_stats(_write_log(tmp_path, rows))
+    assert stats["turnover_usd"] == 1500.0
+    assert stats["total_fees_usd"] == 1.5
+    assert stats["closed_trades"] == 1
+    assert stats["win_rate"] == 1.0

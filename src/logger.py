@@ -119,7 +119,8 @@ def get_stats(log_path: str = "") -> dict:
     """Summary stats over all entries in logs/trades.jsonl.
 
     Returns {total_ticks, total_trades, win_rate, avg_confidence,
-    total_pnl, max_drawdown, sharpe_estimate, first_tick, last_tick}.
+    total_pnl, max_drawdown, sharpe_estimate, turnover_usd,
+    total_fees_usd, first_tick, last_tick, closed_trades}.
 
     total_trades counts ticks with an executed action. win_rate is the
     share of CLOSED trades that were winners: a close is an executed tick
@@ -138,6 +139,7 @@ def get_stats(log_path: str = "") -> dict:
         return {"total_ticks": 0, "total_trades": 0, "win_rate": 0.0,
                 "avg_confidence": 0.0, "total_pnl": 0.0,
                 "max_drawdown": 0.0, "sharpe_estimate": 0.0,
+                "turnover_usd": 0.0, "total_fees_usd": 0.0,
                 "first_tick": "", "last_tick": "", "closed_trades": 0}
 
     total_trades = sum(1 for e in entries
@@ -147,6 +149,8 @@ def get_stats(log_path: str = "") -> dict:
     prev_realized = None
     wins = 0
     closes = 0
+    turnover_usd = 0.0
+    total_fees_usd = 0.0
     for e in entries:
         action = (e.get("action_taken", None)
                   if isinstance(e, dict) else None)
@@ -168,6 +172,15 @@ def get_stats(log_path: str = "") -> dict:
                 closes += 1
         if cur is not None:
             prev_realized = cur
+        try:
+            turnover_usd += float(
+                (e.get("executed_notional_usd", 0.0)
+                 if isinstance(e, dict) else 0.0) or 0.0)
+            total_fees_usd += float(
+                (e.get("fees_usd", 0.0)
+                 if isinstance(e, dict) else 0.0) or 0.0)
+        except (TypeError, ValueError):
+            pass
     win_rate = round(wins / closes, 4) if closes else 0.0
 
     confs = []
@@ -202,6 +215,8 @@ def get_stats(log_path: str = "") -> dict:
             "win_rate": win_rate, "avg_confidence": avg_confidence,
             "total_pnl": total_pnl, "max_drawdown": max_drawdown,
             "sharpe_estimate": sharpe_estimate,
+            "turnover_usd": round(turnover_usd, 4),
+            "total_fees_usd": round(total_fees_usd, 6),
             "first_tick": str(entries[0].get("timestamp", "") or ""),
             "last_tick": str(entries[-1].get("timestamp", "") or ""),
             "closed_trades": closes}
