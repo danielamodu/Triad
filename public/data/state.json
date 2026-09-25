@@ -1,43 +1,41 @@
 {
-  "timestamp": "2026-09-16T13:12:09.511452+00:00",
+  "timestamp": "2026-09-25T14:47:15.467043+00:00",
   "signal_inputs": {
     "price": {
       "signal": "DIVERGENCE_DETECTED",
-      "direction": "RTOKEN_OUTPERFORMING",
-      "divergence_score": 0.02243,
-      "rtoken_change": 0.00513,
-      "crypto_change": -0.0173,
-      "rtoken_last": "213.89",
-      "crypto_last": "75711.57",
-      "selected_rtoken": "RNVDAUSDT",
+      "direction": "CRYPTO_OUTPERFORMING",
+      "divergence_score": -0.01606,
+      "rtoken_change": -0.02209,
+      "crypto_change": -0.00603,
+      "rtoken_last": "368.89",
+      "crypto_last": "83701.81",
+      "selected_rtoken": "RTSLAUSDT",
       "basket_scores": {
-        "RAAPLUSDT": 0.02177,
-        "RNVDAUSDT": 0.02243,
-        "RTSLAUSDT": 0.01282
+        "RAAPLUSDT": 0.0071,
+        "RNVDAUSDT": 0.01076,
+        "RTSLAUSDT": -0.01606
       }
     },
     "event": {
-      "signal": "NEUTRAL",
-      "confidence": 0.5,
-      "range_mult": 1.357,
-      "vol_mult": 0.91,
-      "reason": "no expansion (1.357x range, 0.91x vol)"
+      "signal": "BEARISH",
+      "confidence": 0.267,
+      "reason": "rss headlines over 3554 chars"
     },
     "sentiment": {
       "sentiment": "bullish",
-      "score": 0.593,
-      "reason": "funding z -0.13 (91 obs) + basis -5.2bps"
+      "score": 0.58,
+      "reason": "funding z -0.25 (91 obs) + basis -3.4bps"
     }
   },
   "decision": {
     "decision": "HOLD",
-    "confidence": 0.523,
-    "reasoning": "vote +0.262 from price +0.45*0.5 [divergence +2.243% (RTOKEN_OUTPERFORMING)], event +0.00*0.3 [event NEUTRAL], sentiment +0.19*0.2 [sentiment bullish (0.59)] -> HOLD",
+    "confidence": 0.257,
+    "reasoning": "vote -0.129 from price -0.32*0.5 [divergence -1.606% (CRYPTO_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.27)], sentiment +0.16*0.2 [sentiment bullish (0.58)] -> HOLD",
     "scores": {
-      "price": 0.4486,
-      "event": 0.0,
-      "sentiment": 0.186,
-      "final": 0.2615
+      "price": -0.3212,
+      "event": -0.0,
+      "sentiment": 0.16,
+      "final": -0.1286
     },
     "engine_used": "weighted_fallback",
     "fallback_reason": "Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kk5cbpdweeavcf35rqwkmfhj` service tier `on_dem",
@@ -55,54 +53,45 @@
     "details": "not attempted"
   },
   "symbols": [
-    "RNVDAUSDT",
+    "RTSLAUSDT",
     "BTCUSDT"
   ],
   "positions": [
     {
       "symbol": "BTCUSDT",
       "side": "long",
-      "size_usd": 337516.443,
-      "entry_price": 75737.21,
-      "current_price": 75711.57,
-      "pnl": -114.2625,
-      "usd": 337516.443,
+      "size_usd": 180.1417,
+      "entry_price": 83718.63,
+      "current_price": 83701.81,
+      "pnl": -0.0362,
+      "usd": 180.1417,
       "reconciled": true
     }
   ],
-  "running_pnl": -114.2625,
-  "realized_pnl": -9.4163,
-  "equity_pnl": -123.6788,
+  "running_pnl": -0.0362,
+  "realized_pnl": 0.0,
+  "equity_pnl": 0.0,
   "position_size_usd": 0.0,
   "executed_notional_usd": 0.0,
   "fees_usd": 0.0,
-  "drawdown_pct": 0.007281,
+  "wallet": {
+    "BTCUSDT": 180.1326,
+    "USDT": 403385.7101
+  },
+  "wallet_usd": 403565.8427,
+  "balance_change_usd": 0.0247,
+  "drawdown_pct": 7.4e-05,
   "mode": "paper",
   "memory_summary": [
     {
       "decision": "HOLD",
-      "confidence": 0.511,
+      "confidence": 0.265,
       "executed": false,
-      "running_pnl": 56.5519,
+      "running_pnl": 0.0377,
       "engine": "weighted_fallback",
-      "fallback_decision": "HOLD"
-    },
-    {
-      "decision": "HOLD",
-      "confidence": 0.533,
-      "executed": false,
-      "running_pnl": 25.7581,
-      "engine": "weighted_fallback",
-      "fallback_decision": "HOLD"
-    },
-    {
-      "decision": "LONG_RTOKEN",
-      "confidence": 0.62,
-      "executed": false,
-      "running_pnl": -244.4789,
-      "engine": "groq",
       "fallback_decision": "HOLD"
     }
   ],
-  "reasoning": "vote +0.262 from price +0.45*0.5 [divergence +2.243% (RTOKEN_OUTPERFORMING)], event +0.00*0.3 [event NEUTRAL], sentiment +0.19*0.2 [sentiment bullish (0.59)] -> HOLD"
+  "wake_reason": "divergence",
+  "reasoning": "vote -0.129 from price -0.32*0.5 [divergence -1.606% (CRYPTO_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.27)], sentiment +0.16*0.2 [sentiment bullish (0.58)] -> HOLD"
 }

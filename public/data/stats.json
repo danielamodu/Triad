@@ -1,11 +1,14 @@
 {
-  "total_ticks": 811,
-  "total_trades": 33,
-  "win_rate": 0.3939,
-  "avg_confidence": 0.5755,
-  "total_pnl": -123.6788,
-  "max_drawdown": 3202.5171,
-  "sharpe_estimate": -0.0288,
-  "first_tick": "2026-09-15T23:28:57.956177+00:00",
-  "last_tick": "2026-09-16T13:12:09.511452+00:00"
+  "total_ticks": 2,
+  "total_trades": 0,
+  "win_rate": 0.0,
+  "avg_confidence": 0.261,
+  "total_pnl": 0.0,
+  "max_drawdown": 0.0,
+  "sharpe_estimate": 0.0,
+  "turnover_usd": 0.0,
+  "total_fees_usd": 0.0,
+  "first_tick": "2026-09-25T14:47:08.806391+00:00",
+  "last_tick": "2026-09-25T14:47:15.467043+00:00",
+  "closed_trades": 0
 }
