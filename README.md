@@ -16,7 +16,7 @@ call logged and inspectable. Live on EC2, dashboard on Vercel.
   Profit: `/equity` · Safety: `/risk`
 - Verify in 30 seconds:
   `git clone https://github.com/danielamodu/Triad && cd Triad && python -m pytest tests -q`
-  (131 tests, stdlib + pytest only)
+  (136 tests, stdlib + pytest only)
 
 Live snapshot (2026-09-16 21:51 UTC, paper):
 
@@ -134,6 +134,8 @@ python -m backtest.harness --sweep                  # also try alternate sizing 
 python -m backtest.harness --with-overlays          # replay event + sentiment from history
 python -m backtest.harness --with-overlays --split 0.7           # walk-forward train/test
 python -m backtest.harness --spread-bps 1 --slip-bps 2           # fuller cost model
+python -m backtest.harness --basket                              # pool RAAPL+RNVDA+RTSLA vs BTC
+python -m backtest.harness --basket --split 0.7                  # basket walk-forward (pooled)
 ```
 
 Replays daily candles through the real scorer, sizing, and safety
@@ -144,6 +146,19 @@ profit factor 2.41, +$80 vs +$114 buy-and-hold; high-confidence bucket
 3 trades +$101, mid bucket 2 trades −$38. n=5 is far too thin to tune
 on — directionally supportive of the 0.6/0.8 cuts, nothing more.
 Walk-forward (@0.7 split) holds up out-of-sample, same caveat.
+
+**Broadened run (`--basket`):** replays the whole rToken basket
+(RAAPL/RNVDA/RTSLA) vs BTC on one frozen strategy — each leg on its own
+ledger and cash, the closed trades pooled — to measure win rate over a
+larger cross-underlying sample without touching a single threshold.
+Pooled full-sample: 11 trades (up from 5), 45% win rate, profit factor
+1.9, +$143 vs +$109 buy-and-hold; per leg RAAPL +$81 (pf 2.41 — bit-for-bit
+the single-pair number, so broadening is behavior-preserving), RNVDA
++$105 (pf 3.13, 60% win), RTSLA −$44 (1 trade). Walk-forward @0.7: train
++$138 (8 trades, pf 2.44) vs test −$35 (4 trades) — the out-of-sample
+slice trails buy-and-hold, so pooling triples the evidence but n is still
+too thin to tune on. Sizing cuts (0.6/0.8) and the 1.5pp divergence gate
+stay frozen throughout.
 
 Stage-1 signals (all replayable, all behind `--with-overlays`):
 event = 1H volume+range expansion vs 48h medians (4 events in-sample);
@@ -225,9 +240,9 @@ pick. Safety check passed = safety limits approved the pick.
     verdict carries its backup-rules agreement and answer speed
     (`latency_ms`), and 5 consecutive AI-vs-backup disagreements force
     the backup rules for 10 ticks (drift breaker).
-12. `python -m pytest tests` — 131 tests covering ledger math, safety
+12. `python -m pytest tests` — 136 tests covering ledger math, safety
     gates, live routing, validation, settlement, startup, position
-    persistence, and tick wiring.
+    persistence, backtest pooling, and tick wiring.
 13. Per-leg brackets (bot-opened legs only): −2% stop / +3% take from
     entry flattens the book via EXIT on the next tick. EXIT passes entry
     halts by design so a stop is never trapped; brackets and true entry

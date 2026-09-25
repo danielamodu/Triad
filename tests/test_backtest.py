@@ -84,3 +84,81 @@ def test_walk_forward_splits():
     wf = harness.walk_forward(days, 0.5)
     assert set(wf) == {"split", "train", "test"}
     assert wf["train"]["n_days"] == 3 and wf["test"]["n_days"] == 3
+
+
+def test_run_backtest_labels_its_symbol():
+    days = [("2026-01-02", 0.04, 0.0, 100.0),
+            ("2026-01-04", -0.04, 0.0, 120.0)]
+    rep = harness.run_backtest(days, symbol="RNVDAUSDT")
+    assert rep["symbol"] == "RNVDAUSDT"  # ledger + report label the leg
+    sig = harness.build_price_signal(0.04, 0.01, 100.0, 90000.0, "RTSLAUSDT")
+    assert sig["selected_rtoken"] == "RTSLAUSDT"
+    assert sig["basket_scores"] == {"RTSLAUSDT": 0.03}
+
+
+def test_pool_reports_aggregates_math():
+    # Two independent legs, one winner one loser, pooled by hand-built
+    # reports so the aggregation math is pinned without a full replay.
+    rep_a = {"symbol": "A", "n_days": 3, "n_trades": 1, "win_rate": 1.0,
+             "total_pnl": 100.0, "final_equity": 10100.0,
+             "profit_factor": float("inf"), "max_drawdown_pct": 0.0,
+             "benchmark_bh_pnl": 10.0,
+             "cage_blocks": {"drawdown": 1, "daily": 0, "exposure": 0,
+                             "other": 0},
+             "trades": [{"pnl": 100.0, "bucket": "high", "fees": 1.0}]}
+    rep_b = {"symbol": "B", "n_days": 3, "n_trades": 1, "win_rate": 0.0,
+             "total_pnl": -40.0, "final_equity": 9960.0,
+             "profit_factor": 0.0, "max_drawdown_pct": 0.4,
+             "benchmark_bh_pnl": -5.0,
+             "cage_blocks": {"drawdown": 0, "daily": 2, "exposure": 0,
+                             "other": 0},
+             "trades": [{"pnl": -40.0, "bucket": "mid", "fees": 1.0}]}
+    pooled = harness.pool_reports([rep_a, rep_b])
+    assert pooled["n_trades"] == 2 and pooled["win_rate"] == 0.5
+    assert pooled["profit_factor"] == 2.5  # 100 / 40
+    assert pooled["trade_pnl"] == 60.0 and pooled["total_pnl"] == 60.0
+    assert pooled["start_cash"] == 20000.0
+    assert pooled["final_equity"] == 20060.0
+    assert pooled["fees_paid"] == 2.0
+    assert pooled["buckets"]["high"]["trades"] == 1
+    assert pooled["buckets"]["mid"]["pnl"] == -40.0
+    assert pooled["cage_blocks"] == {"drawdown": 1, "daily": 2,
+                                     "exposure": 0, "other": 0}
+    assert pooled["benchmark_bh_pnl"] == 5.0
+    assert [t["symbol"] for t in pooled["trades"]] == ["A", "B"]
+
+
+def test_run_basket_pools_two_legs():
+    winner = [("2026-01-02", 0.04, 0.0, 100.0),
+              ("2026-01-03", 0.0, 0.0, 110.0),
+              ("2026-01-04", -0.04, 0.0, 120.0)]   # +98.80 like the single
+    loser = [("2026-01-02", 0.04, 0.0, 100.0),
+             ("2026-01-03", 0.0, 0.0, 95.0),
+             ("2026-01-04", -0.04, 0.0, 90.0)]     # closes below entry
+    rep = harness.run_basket({"RAAPLUSDT": winner, "RNVDAUSDT": loser})
+    assert rep["pooled"] is True and rep["n_symbols"] == 2
+    assert rep["symbols"] == ["RAAPLUSDT", "RNVDAUSDT"]
+    assert rep["n_trades"] == 2 and rep["win_rate"] == 0.5
+    assert {t["symbol"] for t in rep["trades"]} == {"RAAPLUSDT", "RNVDAUSDT"}
+    assert rep["start_cash"] == 20000.0
+    # portfolio PnL is the sum of the legs' equity deltas (no shared cash)
+    assert rep["total_pnl"] == round(
+        sum(s["total_pnl"] for s in rep["per_symbol"]), 2)
+
+
+def test_run_basket_skips_empty_legs():
+    winner = [("2026-01-02", 0.04, 0.0, 100.0),
+              ("2026-01-04", -0.04, 0.0, 120.0)]
+    rep = harness.run_basket({"RAAPLUSDT": winner, "RNVDAUSDT": []})
+    assert rep["n_symbols"] == 1 and rep["symbols"] == ["RAAPLUSDT"]
+    assert rep["n_trades"] == 1
+
+
+def test_walk_forward_basket_pools_out_of_sample():
+    days = [("2026-01-0%d" % i, 0.04 if i % 2 else -0.04, 0.0, 100.0)
+            for i in range(2, 8)]
+    wf = harness.walk_forward_basket(
+        {"RAAPLUSDT": days, "RNVDAUSDT": days}, 0.5)
+    assert set(wf) == {"split", "train", "test"}
+    assert wf["train"]["pooled"] is True and wf["test"]["pooled"] is True
+    assert wf["train"]["n_symbols"] == 2 and wf["test"]["n_symbols"] == 2
