@@ -2,9 +2,9 @@
   "exposure": {
     "BTCUSDT": 0.0
   },
-  "realized_pnl": 0.0,
-  "drawdown_pct": 7.4e-05,
-  "day_loss_pct": 3.8e-05,
+  "realized_pnl": -2.1266,
+  "drawdown_pct": 0.001921,
+  "day_loss_pct": 5e-06,
   "broker_streak": 0,
   "limits": {
     "max_position_usd": 1000,
@@ -13,10 +13,10 @@
   },
   "kill_present": false,
   "exposure_gross": {
-    "BTCUSDT": 180.1417
+    "BTCUSDT": 415302.6786
   },
   "adopted": {
-    "BTCUSDT": 180.1417
+    "BTCUSDT": 419121.2348
   },
   "exposure_bot": {
     "BTCUSDT": 0.0

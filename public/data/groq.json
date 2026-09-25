@@ -1,1 +1,222 @@
-[]
+[
+  {
+    "t": "2026-09-25T16:02:38.209320+00:00",
+    "model": "openai/gpt-oss-20b",
+    "decision": "LONG_RTOKEN",
+    "confidence": 0.6,
+    "fallback_decision": "HOLD",
+    "fallback_agree": false,
+    "latency_ms": 94453.5,
+    "prompt": "You are Triad, an autonomous cross-asset trading agent managing rToken (RAAPLUSDT) and crypto (BTCUSDT) positions simultaneously.\n\nCurrent market signals:\nPrice Divergence: {\"signal\":\"DIVERGENCE_DETECTED\",\"direction\":\"RTOKEN_OUTPERFORMING\",\"divergence_score\":0.01723,\"rtoken_change\":0.01263,\"crypto_change\":-0.0046,\"rtoken_last\":\"225.21\",\"crypto_last\":\"83895.64\",\"selected_rtoken\":\"RNVDAUSDT\",\"basket_scores\":{\"RAAPLUSDT\":0.014,\"RNVDAUSDT\":0.01723,\"RTSLAUSDT\":-0.00323}}\nEvent Signal: {\"signal\":\"BEAR",
+    "raw_response": "{\"decision\":\"LONG_RTOKEN\",\"confidence\":0.6,\"reasoning\":\"rToken is outperforming crypto, so we should capture upside by buying rToken\",\"dominant_signal\":\"price_divergence\"}"
+  },
+  {
+    "t": "2026-09-25T16:10:14.175342+00:00",
+    "model": "openai/gpt-oss-20b",
+    "decision": "LONG_RTOKEN",
+    "confidence": 0.6,
+    "fallback_decision": "HOLD",
+    "fallback_agree": false,
+    "latency_ms": 24176.8,
+    "prompt": "You are Triad, an autonomous cross-asset trading agent managing rToken (RAAPLUSDT) and crypto (BTCUSDT) positions simultaneously.\n\nCurrent market signals:\nPrice Divergence: {\"signal\":\"DIVERGENCE_DETECTED\",\"direction\":\"RTOKEN_OUTPERFORMING\",\"divergence_score\":0.01708,\"rtoken_change\":0.01451,\"crypto_change\":-0.00257,\"rtoken_last\":\"225.5\",\"crypto_last\":\"83993.98\",\"selected_rtoken\":\"RNVDAUSDT\",\"basket_scores\":{\"RAAPLUSDT\":0.00969,\"RNVDAUSDT\":0.01708,\"RTSLAUSDT\":-0.00456}}\nEvent Signal: {\"signal\":\"BE",
+    "raw_response": "{\"decision\":\"LONG_RTOKEN\",\"confidence\":0.6,\"reasoning\":\"rToken is outperforming crypto, so we capture upside by buying a small rToken position\",\"dominant_signal\":\"price_divergence\"}"
+  },
+  {
+    "t": "2026-09-25T16:29:05.214670+00:00",
+    "model": "openai/gpt-oss-20b",
+    "decision": "LONG_RTOKEN",
+    "confidence": 0.6,
+    "fallback_decision": "HOLD",
+    "fallback_agree": false,
+    "latency_ms": 1023.3,
+    "prompt": "You are Triad, an autonomous cross-asset trading agent managing rToken (RAAPLUSDT) and crypto (BTCUSDT) positions simultaneously.\n\nCurrent market signals:\nPrice Divergence: {\"signal\":\"DIVERGENCE_DETECTED\",\"direction\":\"RTOKEN_OUTPERFORMING\",\"divergence_score\":0.01676,\"rtoken_change\":0.00788,\"crypto_change\":-0.00888,\"rtoken_last\":\"224.99\",\"crypto_last\":\"83982.83\",\"selected_rtoken\":\"RNVDAUSDT\",\"basket_scores\":{\"RAAPLUSDT\":0.01477,\"RNVDAUSDT\":0.01676,\"RTSLAUSDT\":-0.00935}}\nEvent Signal: {\"signal\":\"B",
+    "raw_response": "{\"decision\":\"LONG_RTOKEN\",\"confidence\":0.6,\"reasoning\":\"Price divergence shows rToken outperforming crypto, so we should add a small long rToken position.\",\"dominant_signal\":\"price_divergence\"}"
+  },
+  {
+    "t": "2026-09-25T16:30:06.377452+00:00",
+    "model": "openai/gpt-oss-20b",
+    "decision": "LONG_RTOKEN",
+    "confidence": 0.7,
+    "fallback_decision": "HOLD",
+    "fallback_agree": false,
+    "latency_ms": 1414.0,
+    "prompt": "You are Triad, an autonomous cross-asset trading agent managing rToken (RAAPLUSDT) and crypto (BTCUSDT) positions simultaneously.\n\nCurrent market signals:\nPrice Divergence: {\"signal\":\"DIVERGENCE_DETECTED\",\"direction\":\"RTOKEN_OUTPERFORMING\",\"divergence_score\":0.01606,\"rtoken_change\":0.00738,\"crypto_change\":-0.00868,\"rtoken_last\":\"225.02\",\"crypto_last\":\"83975.44\",\"selected_rtoken\":\"RNVDAUSDT\",\"basket_scores\":{\"RAAPLUSDT\":0.01516,\"RNVDAUSDT\":0.01606,\"RTSLAUSDT\":-0.01065}}\nEvent Signal: {\"signal\":\"B",
+    "raw_response": "{\"decision\":\"LONG_RTOKEN\",\"confidence\":0.7,\"reasoning\":\"rToken is outperforming crypto, so we should go long rToken\",\"dominant_signal\":\"price_divergence\"}"
+  },
+  {
+    "t": "2026-09-25T16:38:12.424265+00:00",
+    "model": "openai/gpt-oss-20b",
+    "decision": "HEDGE_CRYPTO",
+    "confidence": 0.55,
+    "fallback_decision": "HOLD",
+    "fallback_agree": false,
+    "latency_ms": 866.7,
+    "prompt": "You are Triad, an autonomous cross-asset trading agent managing rToken (RAAPLUSDT) and crypto (BTCUSDT) positions simultaneously.\n\nCurrent market signals:\nPrice Divergence: {\"signal\":\"DIVERGENCE_DETECTED\",\"direction\":\"CRYPTO_OUTPERFORMING\",\"divergence_score\":-0.01542,\"rtoken_change\":-0.02413,\"crypto_change\":-0.00871,\"rtoken_last\":\"372.06\",\"crypto_last\":\"83911\",\"selected_rtoken\":\"RTSLAUSDT\",\"basket_scores\":{\"RAAPLUSDT\":0.01425,\"RNVDAUSDT\":0.01331,\"RTSLAUSDT\":-0.01542}}\nEvent Signal: {\"signal\":\"BE",
+    "raw_response": "{\"decision\":\"HEDGE_CRYPTO\",\"confidence\":0.55,\"reasoning\":\"Price divergence shows crypto outperforming and rToken underperforming, so trimming crypto exposure reduces risk.\",\"dominant_signal\":\"price_divergence\"}"
+  },
+  {
+    "t": "2026-09-25T16:45:46.675947+00:00",
+    "model": "openai/gpt-oss-20b",
+    "decision": "HOLD",
+    "confidence": 0.6,
+    "fallback_decision": "HOLD",
+    "fallback_agree": true,
+    "latency_ms": 35397.1,
+    "prompt": "You are Triad, an autonomous cross-asset trading agent managing rToken (RAAPLUSDT) and crypto (BTCUSDT) positions simultaneously.\n\nCurrent market signals:\nPrice Divergence: {\"signal\":\"DIVERGENCE_DETECTED\",\"direction\":\"CRYPTO_OUTPERFORMING\",\"divergence_score\":-0.01667,\"rtoken_change\":-0.02443,\"crypto_change\":-0.00776,\"rtoken_last\":\"371.91\",\"crypto_last\":\"83893.65\",\"selected_rtoken\":\"RTSLAUSDT\",\"basket_scores\":{\"RAAPLUSDT\":0.01137,\"RNVDAUSDT\":0.01249,\"RTSLAUSDT\":-0.01667}}\nEvent Signal: {\"signal\":",
+    "raw_response": "{\"decision\":\"HOLD\",\"confidence\":0.6,\"reasoning\":\"Signals indicate no clear advantage to opening or closing positions, so maintain current exposure.\",\"dominant_signal\":\"price_divergence\"}"
+  },
+  {
+    "t": "2026-09-25T16:53:31.174304+00:00",
+    "model": "openai/gpt-oss-20b",
+    "decision": "HOLD",
+    "confidence": 0.55,
+    "fallback_decision": "HOLD",
+    "fallback_agree": true,
+    "latency_ms": 20851.9,
+    "prompt": "You are Triad, an autonomous cross-asset trading agent managing rToken (RAAPLUSDT) and crypto (BTCUSDT) positions simultaneously.\n\nCurrent market signals:\nPrice Divergence: {\"signal\":\"DIVERGENCE_DETECTED\",\"direction\":\"CRYPTO_OUTPERFORMING\",\"divergence_score\":-0.01852,\"rtoken_change\":-0.02593,\"crypto_change\":-0.00741,\"rtoken_last\":\"372.34\",\"crypto_last\":\"83898.43\",\"selected_rtoken\":\"RTSLAUSDT\",\"basket_scores\":{\"RAAPLUSDT\":0.01057,\"RNVDAUSDT\":0.01085,\"RTSLAUSDT\":-0.01852}}\nEvent Signal: {\"signal\":",
+    "raw_response": "{\"decision\":\"HOLD\",\"confidence\":0.55,\"reasoning\":\"Crypto is outperforming rToken per divergence signal, so adding rToken would worsen exposure; current crypto position is small relative to risk limits.\",\"dominant_signal\":\"price_divergence\"}"
+  },
+  {
+    "t": "2026-09-25T17:01:11.150000+00:00",
+    "model": "openai/gpt-oss-20b",
+    "decision": "HEDGE_CRYPTO",
+    "confidence": 0.65,
+    "fallback_decision": "HOLD",
+    "fallback_agree": false,
+    "latency_ms": 746.2,
+    "prompt": "You are Triad, an autonomous cross-asset trading agent managing rToken (RAAPLUSDT) and crypto (BTCUSDT) positions simultaneously.\n\nCurrent market signals:\nPrice Divergence: {\"signal\":\"DIVERGENCE_DETECTED\",\"direction\":\"CRYPTO_OUTPERFORMING\",\"divergence_score\":-0.01915,\"rtoken_change\":-0.02786,\"crypto_change\":-0.00871,\"rtoken_last\":\"371.61\",\"crypto_last\":\"83778.79\",\"selected_rtoken\":\"RTSLAUSDT\",\"basket_scores\":{\"RAAPLUSDT\":0.01116,\"RNVDAUSDT\":0.01112,\"RTSLAUSDT\":-0.01915}}\nEvent Signal: {\"signal\":",
+    "raw_response": "{\"decision\":\"HEDGE_CRYPTO\",\"confidence\":0.65,\"reasoning\":\"Crypto is underperforming relative to rToken per price divergence, so selling crypto reduces exposure.\",\"dominant_signal\":\"price_divergence\"}"
+  },
+  {
+    "t": "2026-09-25T17:08:11.279785+00:00",
+    "model": "openai/gpt-oss-20b",
+    "decision": "HEDGE_CRYPTO",
+    "confidence": 0.65,
+    "fallback_decision": "HOLD",
+    "fallback_agree": false,
+    "latency_ms": 910.0,
+    "prompt": "You are Triad, an autonomous cross-asset trading agent managing rToken (RAAPLUSDT) and crypto (BTCUSDT) positions simultaneously.\n\nCurrent market signals:\nPrice Divergence: {\"signal\":\"DIVERGENCE_DETECTED\",\"direction\":\"CRYPTO_OUTPERFORMING\",\"divergence_score\":-0.01944,\"rtoken_change\":-0.02658,\"crypto_change\":-0.00714,\"rtoken_last\":\"372.09\",\"crypto_last\":\"83881.82\",\"selected_rtoken\":\"RTSLAUSDT\",\"basket_scores\":{\"RAAPLUSDT\":0.01181,\"RNVDAUSDT\":0.00932,\"RTSLAUSDT\":-0.01944}}\nEvent Signal: {\"signal\":",
+    "raw_response": "{\"decision\":\"HEDGE_CRYPTO\",\"confidence\":0.65,\"reasoning\":\"Crypto is outperforming the rToken, so trimming crypto exposure locks in gains and reduces risk.\",\"dominant_signal\":\"price_divergence\"}"
+  },
+  {
+    "t": "2026-09-25T17:15:31.273185+00:00",
+    "model": "openai/gpt-oss-20b",
+    "decision": "HEDGE_CRYPTO",
+    "confidence": 0.6,
+    "fallback_decision": "HOLD",
+    "fallback_agree": false,
+    "latency_ms": 20610.8,
+    "prompt": "You are Triad, an autonomous cross-asset trading agent managing rToken (RAAPLUSDT) and crypto (BTCUSDT) positions simultaneously.\n\nCurrent market signals:\nPrice Divergence: {\"signal\":\"DIVERGENCE_DETECTED\",\"direction\":\"CRYPTO_OUTPERFORMING\",\"divergence_score\":-0.02037,\"rtoken_change\":-0.02649,\"crypto_change\":-0.00612,\"rtoken_last\":\"372.05\",\"crypto_last\":\"83963.37\",\"selected_rtoken\":\"RTSLAUSDT\",\"basket_scores\":{\"RAAPLUSDT\":0.01032,\"RNVDAUSDT\":0.00995,\"RTSLAUSDT\":-0.02037}}\nEvent Signal: {\"signal\":",
+    "raw_response": "{\"decision\":\"HEDGE_CRYPTO\",\"confidence\":0.6,\"reasoning\":\"Crypto is outperforming the rToken, so trimming crypto exposure reduces risk while keeping the rToken leg open.\",\"dominant_signal\":\"price_divergence\"}"
+  },
+  {
+    "t": "2026-09-25T17:22:52.270583+00:00",
+    "model": "openai/gpt-oss-20b",
+    "decision": "HEDGE_CRYPTO",
+    "confidence": 0.72,
+    "fallback_decision": "HOLD",
+    "fallback_agree": false,
+    "latency_ms": 41664.9,
+    "prompt": "You are Triad, an autonomous cross-asset trading agent managing rToken (RAAPLUSDT) and crypto (BTCUSDT) positions simultaneously.\n\nCurrent market signals:\nPrice Divergence: {\"signal\":\"DIVERGENCE_DETECTED\",\"direction\":\"CRYPTO_OUTPERFORMING\",\"divergence_score\":-0.01923,\"rtoken_change\":-0.02473,\"crypto_change\":-0.0055,\"rtoken_last\":\"372.21\",\"crypto_last\":\"83900.26\",\"selected_rtoken\":\"RTSLAUSDT\",\"basket_scores\":{\"RAAPLUSDT\":0.01038,\"RNVDAUSDT\":0.00898,\"RTSLAUSDT\":-0.01923}}\nEvent Signal: {\"signal\":\"",
+    "raw_response": "{\"decision\":\"HEDGE_CRYPTO\",\"confidence\":0.72,\"reasoning\":\"Crypto is outperforming the rToken and the price divergence signal indicates a relative advantage, so reducing crypto exposure limits risk while maintaining upside potential.\",\"dominant_signal\":\"price_divergence\"}"
+  },
+  {
+    "t": "2026-09-25T17:32:17.970492+00:00",
+    "model": "openai/gpt-oss-20b",
+    "decision": "HEDGE_CRYPTO",
+    "confidence": 0.72,
+    "fallback_decision": "HOLD",
+    "fallback_agree": false,
+    "latency_ms": 574.6,
+    "prompt": "You are Triad, an autonomous cross-asset trading agent managing rToken (RAAPLUSDT) and crypto (BTCUSDT) positions simultaneously.\n\nCurrent market signals:\nPrice Divergence: {\"signal\":\"STABLE\",\"direction\":\"RTOKEN_OUTPERFORMING\",\"divergence_score\":0.01491,\"rtoken_change\":0.00586,\"crypto_change\":-0.00905,\"rtoken_last\":\"339.97\",\"crypto_last\":\"83641.92\",\"selected_rtoken\":\"RAAPLUSDT\",\"basket_scores\":{\"RAAPLUSDT\":0.01491,\"RNVDAUSDT\":0.01306,\"RTSLAUSDT\":-0.01293}}\nEvent Signal: {\"signal\":\"BEARISH\",\"conf",
+    "raw_response": "{\"decision\":\"HEDGE_CRYPTO\",\"confidence\":0.72,\"reasoning\":\"rToken is outperforming while crypto is declining, so selling crypto reduces exposure and aligns with the price divergence signal.\",\"dominant_signal\":\"price_divergence\"}"
+  },
+  {
+    "t": "2026-09-25T17:55:43.763628+00:00",
+    "model": "openai/gpt-oss-20b",
+    "decision": "HEDGE_CRYPTO",
+    "confidence": 0.55,
+    "fallback_decision": "HOLD",
+    "fallback_agree": false,
+    "latency_ms": 1325.9,
+    "prompt": "You are Triad, an autonomous cross-asset trading agent managing rToken (RAAPLUSDT) and crypto (BTCUSDT) positions simultaneously.\n\nCurrent market signals:\nPrice Divergence: {\"signal\":\"STABLE\",\"direction\":\"CRYPTO_OUTPERFORMING\",\"divergence_score\":-0.0126,\"rtoken_change\":-0.01636,\"crypto_change\":-0.00376,\"rtoken_last\":\"373.3\",\"crypto_last\":\"83718.12\",\"selected_rtoken\":\"RTSLAUSDT\",\"basket_scores\":{\"RAAPLUSDT\":0.0118,\"RNVDAUSDT\":0.00698,\"RTSLAUSDT\":-0.0126}}\nEvent Signal: {\"signal\":\"BEARISH\",\"confid",
+    "raw_response": "{\"decision\":\"HEDGE_CRYPTO\",\"confidence\":0.55,\"reasoning\":\"Bearish sentiment and event signals suggest trimming crypto exposure to reduce risk.\",\"dominant_signal\":\"sentiment\"}"
+  },
+  {
+    "t": "2026-09-25T18:00:52.174864+00:00",
+    "model": "openai/gpt-oss-20b",
+    "decision": "HEDGE_CRYPTO",
+    "confidence": 0.6,
+    "fallback_decision": "HOLD",
+    "fallback_agree": false,
+    "latency_ms": 1515.2,
+    "prompt": "You are Triad, an autonomous cross-asset trading agent managing rToken (RAAPLUSDT) and crypto (BTCUSDT) positions simultaneously.\n\nCurrent market signals:\nPrice Divergence: {\"signal\":\"STABLE\",\"direction\":\"CRYPTO_OUTPERFORMING\",\"divergence_score\":-0.01317,\"rtoken_change\":-0.01617,\"crypto_change\":-0.003,\"rtoken_last\":\"373.62\",\"crypto_last\":\"83829.66\",\"selected_rtoken\":\"RTSLAUSDT\",\"basket_scores\":{\"RAAPLUSDT\":0.01139,\"RNVDAUSDT\":0.00653,\"RTSLAUSDT\":-0.01317}}\nEvent Signal: {\"signal\":\"BEARISH\",\"conf",
+    "raw_response": "{\"decision\":\"HEDGE_CRYPTO\",\"confidence\":0.6,\"reasoning\":\"Risk constraints mandate trimming the large crypto position even though signals are not strongly bearish.\",\"dominant_signal\":\"price_divergence\"}"
+  },
+  {
+    "t": "2026-09-25T18:06:07.030853+00:00",
+    "model": "openai/gpt-oss-20b",
+    "decision": "LONG_RTOKEN",
+    "confidence": 0.55,
+    "fallback_decision": "HOLD",
+    "fallback_agree": false,
+    "latency_ms": 947.0,
+    "prompt": "You are Triad, an autonomous cross-asset trading agent managing rToken (RAAPLUSDT) and crypto (BTCUSDT) positions simultaneously.\n\nCurrent market signals:\nPrice Divergence: {\"signal\":\"STABLE\",\"direction\":\"RTOKEN_OUTPERFORMING\",\"divergence_score\":0.01164,\"rtoken_change\":0.00944,\"crypto_change\":-0.0022,\"rtoken_last\":\"340.09\",\"crypto_last\":\"83823.98\",\"selected_rtoken\":\"RAAPLUSDT\",\"basket_scores\":{\"RAAPLUSDT\":0.01164,\"RNVDAUSDT\":0.0079,\"RTSLAUSDT\":-0.01064}}\nEvent Signal: {\"signal\":\"BEARISH\",\"confid",
+    "raw_response": "{\"decision\":\"LONG_RTOKEN\",\"confidence\":0.55,\"reasoning\":\"Price divergence shows rToken outperforming crypto, so a small long on RAAPLUSDT is warranted.\",\"dominant_signal\":\"price_divergence\"}"
+  },
+  {
+    "t": "2026-09-25T18:11:14.189262+00:00",
+    "model": "openai/gpt-oss-20b",
+    "decision": "LONG_RTOKEN",
+    "confidence": 0.55,
+    "fallback_decision": "HOLD",
+    "fallback_agree": false,
+    "latency_ms": 663.4,
+    "prompt": "You are Triad, an autonomous cross-asset trading agent managing rToken (RAAPLUSDT) and crypto (BTCUSDT) positions simultaneously.\n\nCurrent market signals:\nPrice Divergence: {\"signal\":\"STABLE\",\"direction\":\"RTOKEN_OUTPERFORMING\",\"divergence_score\":0.01163,\"rtoken_change\":0.00894,\"crypto_change\":-0.00269,\"rtoken_last\":\"340.15\",\"crypto_last\":\"83971.57\",\"selected_rtoken\":\"RAAPLUSDT\",\"basket_scores\":{\"RAAPLUSDT\":0.01163,\"RNVDAUSDT\":0.00933,\"RTSLAUSDT\":-0.01122}}\nEvent Signal: {\"signal\":\"BEARISH\",\"conf",
+    "raw_response": "{\"decision\":\"LONG_RTOKEN\",\"confidence\":0.55,\"reasoning\":\"Price divergence shows rToken outperforming crypto, so a small long on RAAPLUSDT is warranted.\",\"dominant_signal\":\"price_divergence\"}"
+  },
+  {
+    "t": "2026-09-25T18:21:28.630457+00:00",
+    "model": "openai/gpt-oss-20b",
+    "decision": "LONG_RTOKEN",
+    "confidence": 0.55,
+    "fallback_decision": "HOLD",
+    "fallback_agree": false,
+    "latency_ms": 899.5,
+    "prompt": "You are Triad, an autonomous cross-asset trading agent managing rToken (RAAPLUSDT) and crypto (BTCUSDT) positions simultaneously.\n\nCurrent market signals:\nPrice Divergence: {\"signal\":\"STABLE\",\"direction\":\"RTOKEN_OUTPERFORMING\",\"divergence_score\":0.01193,\"rtoken_change\":0.00812,\"crypto_change\":-0.00381,\"rtoken_last\":\"340.04\",\"crypto_last\":\"84061.25\",\"selected_rtoken\":\"RAAPLUSDT\",\"basket_scores\":{\"RAAPLUSDT\":0.01193,\"RNVDAUSDT\":0.00942,\"RTSLAUSDT\":-0.00933}}\nEvent Signal: {\"signal\":\"BEARISH\",\"conf",
+    "raw_response": "{\"decision\":\"LONG_RTOKEN\",\"confidence\":0.55,\"reasoning\":\"rToken is outperforming crypto with a positive divergence score, so a small long on RAAPLUSDT aligns with the dominant price divergence signal.\",\"dominant_signal\":\"price_divergence\"}"
+  },
+  {
+    "t": "2026-09-25T19:01:17.709337+00:00",
+    "model": "openai/gpt-oss-20b",
+    "decision": "HEDGE_CRYPTO",
+    "confidence": 0.6,
+    "fallback_decision": "HOLD",
+    "fallback_agree": false,
+    "latency_ms": 952.5,
+    "prompt": "You are Triad, an autonomous cross-asset trading agent managing rToken (RAAPLUSDT) and crypto (BTCUSDT) positions simultaneously.\n\nCurrent market signals:\nPrice Divergence: {\"signal\":\"DIVERGENCE_DETECTED\",\"direction\":\"CRYPTO_OUTPERFORMING\",\"divergence_score\":-0.0153,\"rtoken_change\":-0.0205,\"crypto_change\":-0.0052,\"rtoken_last\":\"371.99\",\"crypto_last\":\"83941.23\",\"selected_rtoken\":\"RTSLAUSDT\",\"basket_scores\":{\"RAAPLUSDT\":0.01448,\"RNVDAUSDT\":0.00417,\"RTSLAUSDT\":-0.0153}}\nEvent Signal: {\"signal\":\"BEA",
+    "raw_response": "{\"decision\":\"HEDGE_CRYPTO\",\"confidence\":0.6,\"reasoning\":\"Crypto is outperforming the rToken, so trimming crypto exposure reduces risk while keeping the rToken leg open.\",\"dominant_signal\":\"price_divergence\"}"
+  },
+  {
+    "t": "2026-09-25T19:02:17.742059+00:00",
+    "model": "openai/gpt-oss-20b",
+    "decision": "HOLD",
+    "confidence": 0.7,
+    "fallback_decision": "HOLD",
+    "fallback_agree": true,
+    "latency_ms": 1052.2,
+    "prompt": "You are Triad, an autonomous cross-asset trading agent managing rToken (RAAPLUSDT) and crypto (BTCUSDT) positions simultaneously.\n\nCurrent market signals:\nPrice Divergence: {\"signal\":\"DIVERGENCE_DETECTED\",\"direction\":\"CRYPTO_OUTPERFORMING\",\"divergence_score\":-0.01615,\"rtoken_change\":-0.02078,\"crypto_change\":-0.00463,\"rtoken_last\":\"371.72\",\"crypto_last\":\"83955.8\",\"selected_rtoken\":\"RTSLAUSDT\",\"basket_scores\":{\"RAAPLUSDT\":0.01364,\"RNVDAUSDT\":0.00396,\"RTSLAUSDT\":-0.01615}}\nEvent Signal: {\"signal\":\"",
+    "raw_response": "{\"decision\":\"HOLD\",\"confidence\":0.7,\"reasoning\":\"Crypto is outperforming rToken per price divergence, event bearish confidence is low and sentiment neutral, so maintaining the current long crypto position is prudent.\",\"dominant_signal\":\"price_divergence\"}"
+  },
+  {
+    "t": "2026-09-25T19:03:17.570962+00:00",
+    "model": "openai/gpt-oss-20b",
+    "decision": "HOLD",
+    "confidence": 0.7,
+    "fallback_decision": "HOLD",
+    "fallback_agree": true,
+    "latency_ms": 990.0,
+    "prompt": "You are Triad, an autonomous cross-asset trading agent managing rToken (RAAPLUSDT) and crypto (BTCUSDT) positions simultaneously.\n\nCurrent market signals:\nPrice Divergence: {\"signal\":\"STABLE\",\"direction\":\"CRYPTO_OUTPERFORMING\",\"divergence_score\":-0.01475,\"rtoken_change\":-0.01918,\"crypto_change\":-0.00443,\"rtoken_last\":\"371.83\",\"crypto_last\":\"83942.69\",\"selected_rtoken\":\"RTSLAUSDT\",\"basket_scores\":{\"RAAPLUSDT\":0.01422,\"RNVDAUSDT\":0.00408,\"RTSLAUSDT\":-0.01475}}\nEvent Signal: {\"signal\":\"BEARISH\",\"co",
+    "raw_response": "{\"decision\":\"HOLD\",\"confidence\":0.7,\"reasoning\":\"Price divergence indicates crypto is outperforming rToken, so no action is needed.\",\"dominant_signal\":\"price_divergence\"}"
+  }
+]
