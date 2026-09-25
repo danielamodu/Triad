@@ -156,3 +156,26 @@ def test_confirmed_zero_fill_reports_no_fill(monkeypatch):
                            "BTCUSDT")
     assert leg["executed"] is False and cancelled == ["OID-Z"]
     assert leg["details"].startswith("NO_FILL")
+
+
+def test_size_for_confidence_is_continuous_and_capped():
+    """Sizing scales smoothly with conviction (no more two fixed tiers)."""
+    import config
+    cap = float(config.RISK_MAX_POSITION_USD)
+    # Below the floor -> skip.
+    assert executor.size_for_confidence(0.0) == 0.0
+    assert executor.size_for_confidence(executor.MID_CONF_T - 0.01) == 0.0
+    # At the threshold -> the floor; at/over full confidence -> the cap.
+    assert executor.size_for_confidence(executor.MID_CONF_T) == round(
+        min(executor.SIZE_FLOOR, cap), 2)
+    assert executor.size_for_confidence(1.0) == cap
+    assert executor.size_for_confidence(1.5) == cap  # clamped to the cage
+    # Strictly increasing and all-distinct across the band: a real book,
+    # not the old $500/$1000 step where every trade came out identical.
+    sizes = [executor.size_for_confidence(c)
+             for c in (0.6, 0.7, 0.8, 0.9, 1.0)]
+    assert sizes == sorted(sizes)
+    assert len(set(sizes)) == len(sizes)
+    # Bad input never raises.
+    assert executor.size_for_confidence("x") == 0.0
+    assert executor.size_for_confidence(None) == 0.0

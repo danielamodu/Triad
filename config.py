@@ -93,6 +93,16 @@ GROQ_TIMEOUT_SEC = 10
 GROQ_TRACE_FILE = "logs/groq_trace.jsonl"  # every prompt + raw verdict
 GROQ_MAX_DISAGREE = 5  # consecutive Groq-vs-fallback disagreements -> cooldown
 GROQ_COOLDOWN_TICKS = 10  # forced-fallback ticks after the breaker trips
+# Rate-limit handling. Free-tier Groq caps calls/day: a call spent on a
+# calm HOLD is wasted, and once the quota trips every call 429s and falls
+# back to rules anyway. So (a) gate the LLM to ticks that actually need
+# judgement, and (b) give a 429 one short retry — never long enough to
+# stall the loop (a server cooldown past the cap just falls back this tick;
+# the loop never blocks on the LLM).
+GROQ_SENTIMENT_WAKE = 0.15  # |sentiment-0.5| that makes a calm tick worth an AI call
+GROQ_MAX_RETRIES = 1        # extra attempts after a 429 (0 disables retry)
+GROQ_RETRY_BASE_SEC = 1.0   # backoff when a 429 carries no Retry-After header
+GROQ_RETRY_CAP_SEC = 3.0    # never block the loop longer than this on a retry
 
 
 def has_credentials() -> bool:

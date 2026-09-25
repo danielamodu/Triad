@@ -98,11 +98,15 @@ def _groq_tick(monkeypatch, tmp_path, verdict, cooldown=0):
                         os.path.join(str(tmp_path), "positions.json"))
     monkeypatch.setattr(config, "GROQ_TRACE_FILE",
                         os.path.join(str(tmp_path), "groq.jsonl"))
+    # A worthwhile tick (live divergence) so the loop actually consults
+    # Groq — the calm-tick gate would otherwise force the fallback.
     monkeypatch.setattr(main, "get_divergence",
-                        lambda: {"signal": "STABLE", "direction": "FLAT",
-                                 "divergence_score": 0.0, "rtoken_change": 0.0,
+                        lambda: {"signal": "DIVERGENCE_DETECTED",
+                                 "direction": "RTOKEN_OUTPERFORM",
+                                 "divergence_score": 0.02, "rtoken_change": 0.02,
                                  "crypto_change": 0.0, "rtoken_last": "100",
-                                 "crypto_last": "90000"})
+                                 "crypto_last": "90000",
+                                 "selected_rtoken": "RAAPLUSDT"})
     monkeypatch.setattr(main, "get_event",
                         lambda: {"signal": "NEUTRAL", "confidence": 0.5})
     monkeypatch.setattr(main, "get_sentiment",
@@ -316,3 +320,137 @@ def test_stats_totals_turnover_and_fees(tmp_path):
     assert stats["total_fees_usd"] == 1.5
     assert stats["closed_trades"] == 1
     assert stats["win_rate"] == 1.0
+
+
+def test_groq_worthwhile_gates_calm_ticks():
+    main.OPEN_POSITIONS.clear()
+    calm = {"signal": "STABLE"}
+    neutral_evt = {"signal": "NEUTRAL"}
+    neutral_sent = {"sentiment": "neutral", "score": 0.5}
+    # Fully calm, flat book -> not worth an AI call.
+    assert main._groq_worthwhile(calm, neutral_evt, neutral_sent) is False
+    # Any real signal wakes the AI.
+    assert main._groq_worthwhile(
+        {"signal": "DIVERGENCE_DETECTED"}, neutral_evt, neutral_sent) is True
+    assert main._groq_worthwhile(
+        calm, {"signal": "BEARISH"}, neutral_sent) is True
+    assert main._groq_worthwhile(
+        calm, neutral_evt,
+        {"score": 0.5 + config.GROQ_SENTIMENT_WAKE}) is True
+    # A sub-threshold sentiment wobble stays calm.
+    assert main._groq_worthwhile(
+        calm, neutral_evt,
+        {"score": 0.5 + config.GROQ_SENTIMENT_WAKE / 2}) is False
+    # An open leg to manage always warrants the AI.
+    main.OPEN_POSITIONS["BTCUSDT"] = {"symbol": "BTCUSDT", "pnl": 0.0}
+    try:
+        assert main._groq_worthwhile(calm, neutral_evt, neutral_sent) is True
+    finally:
+        main.OPEN_POSITIONS.clear()
+
+
+def test_calm_tick_forces_fallback_without_calling_groq(monkeypatch, tmp_path):
+    monkeypatch.setattr(config, "RISK_STATE_FILE",
+                        os.path.join(str(tmp_path), "risk_state.json"))
+    monkeypatch.setattr(config, "POSITIONS_FILE",
+                        os.path.join(str(tmp_path), "positions.json"))
+    monkeypatch.setattr(config, "GROQ_TRACE_FILE",
+                        os.path.join(str(tmp_path), "groq.jsonl"))
+    monkeypatch.setattr(main, "get_divergence",
+                        lambda: {"signal": "STABLE", "direction": "FLAT",
+                                 "divergence_score": 0.0, "rtoken_change": 0.0,
+                                 "crypto_change": 0.0, "rtoken_last": "100",
+                                 "crypto_last": "90000"})
+    monkeypatch.setattr(main, "get_event",
+                        lambda: {"signal": "NEUTRAL", "confidence": 0.5})
+    monkeypatch.setattr(main, "get_sentiment",
+                        lambda: {"sentiment": "neutral", "score": 0.5})
+    monkeypatch.setattr(main, "get_positions", lambda **kw: {"__ok": True})
+    monkeypatch.setattr(main, "get_balance", lambda coin, **kw: 25000.0)
+    seen = {}
+
+    def fake_decide(signals, pos, mem, **kw):
+        seen["force"] = kw.get("force_fallback", False)
+        seen["reason"] = kw.get("fallback_reason", "")
+        return {"decision": "HOLD", "confidence": 0.0, "reasoning": "t",
+                "scores": {}, "engine_used": "weighted_fallback",
+                "fallback_decision": "HOLD", "fallback_agree": True}
+    monkeypatch.setattr(main, "decide", fake_decide)
+    monkeypatch.setattr(main, "append_log", lambda e: "mock")
+    main.MEMORY.clear()
+    main.OPEN_POSITIONS.clear()
+    main._STATE_SAVE_OK = True
+    main.tick()
+    main.MEMORY.clear()
+    main.OPEN_POSITIONS.clear()
+    assert seen["force"] is True
+    assert "calm tick" in seen["reason"]
+# RETRY_TESTS_PLACEHOLDER
+
+
+def test_retry_after_seconds_detects_429_and_reads_header():
+    class Resp:
+        headers = {"retry-after": "2.5"}
+
+    class RateLimitError(Exception):
+        status_code = 429
+        response = Resp()
+    assert engine._retry_after_seconds(RateLimitError("429 too many")) == 2.5
+
+    class Bare(Exception):
+        status_code = 429
+    assert engine._retry_after_seconds(Bare("rate limit")) == float(
+        config.GROQ_RETRY_BASE_SEC)
+    # Non-429 -> negative sentinel, so the caller re-raises immediately.
+    assert engine._retry_after_seconds(ValueError("bad json")) < 0
+
+
+def _client_raising(exc_factory, succeed_on=None):
+    calls = {"n": 0}
+
+    class Client:
+        class chat:
+            class completions:
+                @staticmethod
+                def create(**kw):
+                    calls["n"] += 1
+                    if succeed_on is not None and calls["n"] >= succeed_on:
+                        return "OK"
+                    raise exc_factory()
+    return Client(), calls
+
+
+def test_create_with_retry_retries_once_then_succeeds(monkeypatch):
+    import time
+    monkeypatch.setattr(time, "sleep", lambda s: None)
+    monkeypatch.setattr(config, "GROQ_MAX_RETRIES", 1)
+    monkeypatch.setattr(config, "GROQ_RETRY_CAP_SEC", 5.0)
+
+    def make():
+        e = RuntimeError("429 rate limit")
+        e.status_code = 429
+        e.response = type("R", (), {"headers": {"retry-after": "1"}})()
+        return e
+    client, calls = _client_raising(make, succeed_on=2)
+    assert engine._create_with_retry(client, "p") == "OK"
+    assert calls["n"] == 2
+
+
+def test_create_with_retry_falls_back_when_cooldown_exceeds_cap(monkeypatch):
+    import time
+    import pytest
+    slept = []
+    monkeypatch.setattr(time, "sleep", lambda s: slept.append(s))
+    monkeypatch.setattr(config, "GROQ_MAX_RETRIES", 1)
+    monkeypatch.setattr(config, "GROQ_RETRY_CAP_SEC", 3.0)
+
+    def make():
+        e = RuntimeError("429 rate limit")
+        e.status_code = 429
+        e.response = type("R", (), {"headers": {"retry-after": "60"}})()
+        return e
+    client, calls = _client_raising(make)  # always raises
+    with pytest.raises(RuntimeError):
+        engine._create_with_retry(client, "p")
+    assert calls["n"] == 1  # long server cooldown -> no retry, fall back now
+    assert slept == []

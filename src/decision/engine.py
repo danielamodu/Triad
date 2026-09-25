@@ -195,6 +195,61 @@ def build_prompt(price_signal: dict, event_signal: dict,
                 mem_ctx, separators=(",", ":"))))
 
 
+def _retry_after_seconds(exc) -> float:
+    """Seconds to wait from a rate-limit (429) error, or -1.0 if `exc`
+    is not a 429. Reads the Retry-After header when present, else a
+    default backoff. Never raises."""
+    try:
+        status = getattr(exc, "status_code", None)
+        name = type(exc).__name__
+        msg = str(exc).lower()
+        is_429 = (status == 429 or name == "RateLimitError"
+                  or "429" in msg or "rate limit" in msg
+                  or "too many requests" in msg)
+        if not is_429:
+            return -1.0
+        headers = getattr(getattr(exc, "response", None), "headers", None) or {}
+        try:
+            raw = headers.get("retry-after", headers.get("Retry-After"))
+        except Exception:
+            raw = None
+        if raw is not None:
+            try:
+                return max(0.0, float(raw))
+            except (TypeError, ValueError):
+                pass
+        return float(config.GROQ_RETRY_BASE_SEC)
+    except Exception:
+        return -1.0
+
+
+def _create_with_retry(client, prompt):
+    """Call Groq once, with a single short retry on a 429.
+
+    Honors Retry-After but never sleeps past GROQ_RETRY_CAP_SEC — a
+    server-mandated cooldown longer than that (typically a daily-quota
+    429) re-raises so the caller falls back for this tick instead of
+    stalling the loop. Non-429 errors re-raise immediately.
+    """
+    import time
+    attempts = max(0, int(config.GROQ_MAX_RETRIES)) + 1
+    for attempt in range(attempts):
+        try:
+            return client.chat.completions.create(
+                model=config.GROQ_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1,
+                max_tokens=1024,
+            )
+        except Exception as exc:
+            wait = _retry_after_seconds(exc)
+            if (wait < 0 or attempt >= attempts - 1
+                    or wait > config.GROQ_RETRY_CAP_SEC):
+                raise
+            time.sleep(wait)
+    raise RuntimeError("unreachable: retry loop exited")  # pragma: no cover
+
+
 def groq_decide(price_signal: dict, event_signal: dict,
                 sentiment_signal: dict, positions: dict,
                 memory=None) -> dict:
@@ -212,15 +267,11 @@ def groq_decide(price_signal: dict, event_signal: dict,
                           positions, memory)
     client = Groq(api_key=config.GROQ_API_KEY,
                   timeout=config.GROQ_TIMEOUT_SEC)
-    # NOTE: max_tokens must leave headroom for this model's hidden
-    # reasoning tokens — too small a budget yields empty content.
+    # NOTE: max_tokens (set in _create_with_retry) must leave headroom
+    # for this model's hidden reasoning tokens — too small a budget
+    # yields empty content. _create_with_retry adds one short 429 retry.
     started = time.monotonic()
-    resp = client.chat.completions.create(
-        model=config.GROQ_MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.1,
-        max_tokens=1024,
-    )
+    resp = _create_with_retry(client, prompt)
     latency_ms = round((time.monotonic() - started) * 1000, 1)
     choice = resp.choices[0]
     text = choice.message.content or ""
@@ -241,16 +292,18 @@ def groq_decide(price_signal: dict, event_signal: dict,
 
 
 def decide(signals: dict, positions: dict = None, memory=None,
-           force_fallback: bool = False) -> dict:
+           force_fallback: bool = False,
+           fallback_reason: str = "groq cooldown (drift breaker)") -> dict:
     """Primary Groq path with weighted fallback.
 
     Returns {decision, confidence, reasoning, scores, engine_used,
     fallback_decision, fallback_agree}. The fallback is always computed
     (cheap) so callers can audit Groq against it. force_fallback skips
-    the LLM entirely (drift-breaker cooldown).
-    `positions` is optional so existing callers (main.py) keep working.
-    `memory` is an optional list of recent decision/outcome dicts;
-    the last 3 are passed to the Groq prompt for cross-tick context.
+    the LLM entirely; fallback_reason records why (drift-breaker cooldown
+    by default, or e.g. a calm tick the caller chose not to spend a call
+    on). `positions` is optional so existing callers (main.py) keep
+    working. `memory` is an optional list of recent decision/outcome
+    dicts; the last 3 are passed to the Groq prompt for cross-tick context.
     """
     signals = signals or {}
     price = signals.get("price", {})
@@ -259,7 +312,7 @@ def decide(signals: dict, positions: dict = None, memory=None,
     fallback = weighted_decision(price, event, sentiment)
     if force_fallback:
         fallback["engine_used"] = "weighted_fallback"
-        fallback["fallback_reason"] = "groq cooldown (drift breaker)"
+        fallback["fallback_reason"] = fallback_reason
         fallback["fallback_decision"] = fallback["decision"]
         fallback["fallback_agree"] = True
         return fallback

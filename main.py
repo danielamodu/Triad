@@ -119,6 +119,34 @@ def _write_groq_trace(decision: dict) -> None:
     except Exception:
         pass
 
+
+def _groq_worthwhile(price: dict, event: dict, sentiment: dict) -> bool:
+    """True when a tick deserves an AI (Groq) call instead of the free
+    deterministic rules.
+
+    A fully calm tick — stable price, neutral event and sentiment, and no
+    open bot leg to manage — is a guaranteed HOLD the weighted rules
+    already produce, so spending a Groq call on it only burns free-tier
+    quota (and, once the quota trips, is a guaranteed 429 -> fallback
+    anyway). Any real signal, or an open position that might need exiting,
+    still gets the AI. On any doubt, consult the AI. Never raises.
+    """
+    try:
+        if OPEN_POSITIONS:
+            return True
+        if str((price or {}).get("signal", "")).upper() == "DIVERGENCE_DETECTED":
+            return True
+        if str((event or {}).get("signal", "NEUTRAL")).upper() in (
+                "BULLISH", "BEARISH"):
+            return True
+        try:
+            score = float((sentiment or {}).get("score", 0.5) or 0.5)
+        except (TypeError, ValueError):
+            score = 0.5
+        return abs(score - 0.5) >= config.GROQ_SENTIMENT_WAKE
+    except Exception:
+        return True
+
 DECISION_SYMBOL = {
     "LONG_RTOKEN": config.RTOKEN_SYMBOL,
     "HEDGE_CRYPTO": config.CRYPTO_SYMBOL,
@@ -779,11 +807,19 @@ def tick(live: bool = False) -> dict:
         "broker_streak": broker_streak,
     }
 
+    # Spend a Groq call only when the tick needs judgement (or a breaker
+    # cooldown is active): calm ticks fall back to the free deterministic
+    # rules, which keeps us under the LLM's free-tier rate limit instead
+    # of 429-ing every tick and silently falling back anyway.
+    cooldown_active = int(rstate.get("groq_cooldown", 0) or 0) > 0
+    ai_worthwhile = _groq_worthwhile(price, event, sentiment)
+    skip_reason = ("groq cooldown (drift breaker)" if cooldown_active
+                   else "calm tick: no divergence/event/sentiment, flat book")
     decision = decide({"price": price, "event": event,
                        "sentiment": sentiment}, tracked,
                       _memory_context(3),
-                      force_fallback=int(rstate.get("groq_cooldown", 0)
-                                         or 0) > 0)
+                      force_fallback=cooldown_active or not ai_worthwhile,
+                      fallback_reason=skip_reason)
     _update_groq_breaker(rstate, decision)
     _write_groq_trace(decision)
     # Audit keys stay out of the trade log (they live in the trace file).

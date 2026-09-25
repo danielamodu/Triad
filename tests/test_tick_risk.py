@@ -54,7 +54,7 @@ def test_tick_logs_intended_and_executed_size(monkeypatch, tmp_path):
                          "reasoning": "t", "scores": {},
                          "engine_used": "test"},
                         fill)
-    assert entry["position_size_usd"] == 1000.0  # intended from confidence
+    assert entry["position_size_usd"] == executor.size_for_confidence(0.9)
     assert entry["executed_notional_usd"] == 1000.0  # actually filled
     assert "drawdown_pct" in entry
     assert isinstance(entry["memory_summary"], list)

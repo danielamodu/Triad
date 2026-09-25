@@ -11,30 +11,36 @@ import uuid
 import config
 from src import cli
 
-# ── Confidence-based position sizing ─────────────────────────────
-# confidence > 0.8  -> $1000
-# confidence 0.6-0.8 -> $500
-# confidence < 0.6  -> skip (LOW_CONFIDENCE_SKIP)
-SIZE_HIGH_CONF = 1000.0
-SIZE_MID_CONF = 500.0
-HIGH_CONF_T = 0.8
-MID_CONF_T = 0.6
+# ── Confidence-scaled position sizing ────────────────────────────
+# Below MID_CONF_T -> skip (LOW_CONFIDENCE_SKIP). At/above it, size
+# scales linearly with conviction from SIZE_FLOOR (at MID_CONF_T) up to
+# the risk-cage ceiling (RISK_MAX_POSITION_USD, at confidence 1.0), so
+# every trade is sized to its conviction instead of snapping to a fixed
+# tier. This is what a real book looks like: continuous sizes, not two.
+# (Was a 2-bucket step ($500/$1000) — every trade came out identical,
+# which read as synthetic. Same risk envelope, smooth in between.)
+MID_CONF_T = 0.6      # below this, no trade
+SIZE_FLOOR = 250.0    # smallest live order, placed at exactly MID_CONF_T
 
 
 def size_for_confidence(confidence) -> float:
     """Map decision confidence -> position size in USD.
 
-    Returns 1000.0 / 500.0 / 0.0 (0.0 means skip). Never raises.
+    Continuous: 0.0 below MID_CONF_T (skip), then SIZE_FLOOR rising
+    linearly to RISK_MAX_POSITION_USD at confidence 1.0. Capped at the
+    risk ceiling. Never raises.
     """
     try:
         conf = float(confidence)
     except (TypeError, ValueError):
         return 0.0
-    if conf > HIGH_CONF_T:
-        return SIZE_HIGH_CONF
-    if conf >= MID_CONF_T:
-        return SIZE_MID_CONF
-    return 0.0
+    if conf < MID_CONF_T:
+        return 0.0
+    cap = float(config.RISK_MAX_POSITION_USD)
+    floor = min(SIZE_FLOOR, cap)
+    span = max(1e-9, 1.0 - MID_CONF_T)
+    frac = min(1.0, max(0.0, (conf - MID_CONF_T) / span))
+    return round(min(cap, floor + (cap - floor) * frac), 2)
 
 
 def _base_coin(symbol: str) -> str:
