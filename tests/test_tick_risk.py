@@ -8,7 +8,7 @@ from src.execution import executor
 
 
 def _quiet_tick(monkeypatch, tmp_path, decide_result, execute_result=None,
-                cash=25000.0):
+                cash=25000.0, execute_fn=None):
     """Run main.tick() fully mocked; return the logged entry."""
     monkeypatch.setattr(config, "RISK_STATE_FILE",
                         os.path.join(str(tmp_path), "risk_state.json"))
@@ -29,7 +29,9 @@ def _quiet_tick(monkeypatch, tmp_path, decide_result, execute_result=None,
     monkeypatch.setattr(main, "get_balance", lambda coin, **kw: cash)
     monkeypatch.setattr(main, "decide",
                         lambda signals, pos, mem, **kw: decide_result)
-    if execute_result is not None:
+    if execute_fn is not None:
+        monkeypatch.setattr(main, "execute", execute_fn)
+    elif execute_result is not None:
         monkeypatch.setattr(main, "execute",
                             lambda dec, sym, **kw: dict(execute_result))
     captured = {}
@@ -286,7 +288,9 @@ def test_wake_reason_never_raises_on_garbage():
 
 def test_exit_fires_both_legs_simultaneously(monkeypatch, tmp_path):
     """EXIT's two legs must run concurrently: a barrier both legs have to
-    reach proves simultaneity (sequential execution would time out)."""
+    reach proves simultaneity (sequential execution would time out). EXIT
+    now flattens the open bot book, so seed two bot legs (a long + a short)
+    for it to close."""
     gate = threading.Barrier(2, timeout=10)
     calls = []
     monkeypatch.setattr(config, "RISK_STATE_FILE",
@@ -308,7 +312,8 @@ def test_exit_fires_both_legs_simultaneously(monkeypatch, tmp_path):
         calls.append(sym)
         gate.wait()  # both legs must be in flight together
         return {"executed": True, "order_id": "x-" + sym, "symbol": sym,
-                "side": "sell", "notional_usdt": 100.0, "fill_value": 100.0}
+                "side": kw.get("side_override") or "sell",
+                "notional_usdt": 100.0, "fill_value": 100.0}
 
     monkeypatch.setattr(main, "execute", fake_execute)
     captured = {}
@@ -316,6 +321,8 @@ def test_exit_fires_both_legs_simultaneously(monkeypatch, tmp_path):
                         lambda e: captured.update(e) or "mock")
     main.MEMORY.clear()
     main.OPEN_POSITIONS.clear()
+    main.OPEN_POSITIONS["RAAPLUSDT"] = _bot_leg(side="long")
+    main.OPEN_POSITIONS["BTCUSDT"] = _bot_leg(symbol="BTCUSDT", side="short")
     main._STATE_SAVE_OK = True
     try:
         main.tick()
@@ -332,10 +339,10 @@ def test_exit_fires_both_legs_simultaneously(monkeypatch, tmp_path):
 
 
 def _bot_leg(symbol="RAAPLUSDT", side="long", entry=100.0, current=100.0,
-             reconciled=False):
-    leg = {"symbol": symbol, "side": side, "size_usd": 1000.0,
+             reconciled=False, size=1000.0):
+    leg = {"symbol": symbol, "side": side, "size_usd": size,
            "entry_price": entry, "current_price": current,
-           "pnl": 0.0, "usd": 1000.0}
+           "pnl": 0.0, "usd": size}
     if reconciled:
         leg["reconciled"] = True
     return leg
@@ -410,3 +417,158 @@ def test_bracket_breach_forces_exit(monkeypatch, tmp_path):
     assert captured["decision"]["bracket_trigger"] == "RAAPLUSDT:stop"
     assert "bracket stop" in captured["decision"]["reasoning"]
     assert captured["action_taken"]["executed"] is True
+
+
+# ── "Trade via BTC": the rToken basket signals, BTC executes ──────
+def _seeded_tick(monkeypatch, tmp_path, decide_result, seed, execute_fn):
+    """tick() with OPEN_POSITIONS seeded (not cleared before the tick)."""
+    monkeypatch.setattr(config, "RISK_STATE_FILE",
+                        os.path.join(str(tmp_path), "risk_state.json"))
+    monkeypatch.setattr(config, "POSITIONS_FILE",
+                        os.path.join(str(tmp_path), "positions.json"))
+    monkeypatch.setattr(main, "get_divergence",
+                        lambda: dict(CALM_PRICE, selected_rtoken="RAAPLUSDT"))
+    monkeypatch.setattr(main, "get_event", lambda: dict(CALM_EVENT))
+    monkeypatch.setattr(main, "get_sentiment", lambda: dict(CALM_SENT))
+    monkeypatch.setattr(main, "get_positions", lambda **kw: {"__ok": True})
+    monkeypatch.setattr(main, "get_balance", lambda coin, **kw: 25000.0)
+    monkeypatch.setattr(main, "decide",
+                        lambda s, p, m, **kw: dict(decide_result))
+    monkeypatch.setattr(main, "execute", execute_fn)
+    captured = {}
+    monkeypatch.setattr(main, "append_log",
+                        lambda e: captured.update(e) or "mock")
+    main.MEMORY.clear()
+    main.OPEN_POSITIONS.clear()
+    for sym, pos in (seed or {}).items():
+        main.OPEN_POSITIONS[sym] = pos
+    main._STATE_SAVE_OK = True
+    try:
+        main.tick()
+    finally:
+        main.MEMORY.clear()
+        main.OPEN_POSITIONS.clear()
+    return captured
+
+
+def test_long_routes_execution_through_btc(monkeypatch, tmp_path):
+    # The basket leg (RAAPLUSDT) is only the SIGNAL; a bullish call must
+    # BUY BTC, with no close overrides.
+    seen = {}
+
+    def fake_execute(dec, sym, **kw):
+        seen["symbol"] = sym
+        seen["side_override"] = kw.get("side_override")
+        seen["notional_override"] = kw.get("notional_override")
+        return {"executed": True, "order_id": "b", "symbol": sym,
+                "side": "buy", "notional_usdt": 900.0, "fill_value": 900.0,
+                "fill_price": 90000.0}
+
+    _quiet_tick(monkeypatch, tmp_path,
+                {"decision": "LONG_RTOKEN", "confidence": 0.9,
+                 "reasoning": "t", "scores": {}, "engine_used": "test"},
+                execute_fn=fake_execute)
+    assert seen["symbol"] == config.CRYPTO_SYMBOL
+    assert not seen["side_override"]
+    assert not seen["notional_override"]
+
+
+def test_bot_long_exposure_side_and_reconciled_aware():
+    main.OPEN_POSITIONS.clear()
+    try:
+        main.OPEN_POSITIONS["BTCUSDT"] = _bot_leg(symbol="BTCUSDT")
+        main.OPEN_POSITIONS["ETHUSDT"] = _bot_leg(symbol="ETHUSDT",
+                                                  side="short")
+        main.OPEN_POSITIONS["XRPUSDT"] = _bot_leg(symbol="XRPUSDT",
+                                                  reconciled=True)
+        # Only bot LONG legs feed the no-doubling gate: shorts (a buy would
+        # cover them) and adopted inventory are excluded.
+        assert main._bot_long_exposure() == {"BTCUSDT": 1000.0}
+    finally:
+        main.OPEN_POSITIONS.clear()
+
+
+def test_long_blocked_by_existing_bot_btc_long(monkeypatch, tmp_path):
+    called = {"n": 0}
+
+    def fake_execute(dec, sym, **kw):
+        called["n"] += 1
+        return {"executed": True, "order_id": "x", "symbol": sym}
+
+    captured = _seeded_tick(
+        monkeypatch, tmp_path,
+        {"decision": "LONG_RTOKEN", "confidence": 0.9, "reasoning": "t",
+         "scores": {}, "engine_used": "test"},
+        {"BTCUSDT": _bot_leg(symbol="BTCUSDT", entry=90000.0,
+                             current=90000.0)},
+        fake_execute)
+    assert captured["risk"]["approved"] is False
+    assert "no doubling" in captured["risk"]["blocked_reason"]
+    assert called["n"] == 0  # gate fired before any order
+
+
+def test_long_allowed_while_bot_btc_short_covers(monkeypatch, tmp_path):
+    seen = {}
+
+    def fake_execute(dec, sym, **kw):
+        seen["symbol"] = sym
+        seen["side_override"] = kw.get("side_override")
+        return {"executed": True, "order_id": "c", "symbol": sym,
+                "side": "buy", "notional_usdt": 500.0, "fill_value": 500.0,
+                "fill_price": 90000.0}
+
+    captured = _seeded_tick(
+        monkeypatch, tmp_path,
+        {"decision": "LONG_RTOKEN", "confidence": 0.9, "reasoning": "t",
+         "scores": {}, "engine_used": "test"},
+        {"BTCUSDT": _bot_leg(symbol="BTCUSDT", side="short", entry=90000.0,
+                             current=90000.0)},
+        fake_execute)
+    # A short is not a long: the buy is allowed (it covers), routed to BTC.
+    assert captured["risk"]["approved"] is True
+    assert seen["symbol"] == config.CRYPTO_SYMBOL
+    assert not seen["side_override"]
+
+
+def test_exit_covers_short_by_buying(monkeypatch, tmp_path):
+    # EXIT flattens a bot short by BUYING to cover, at the leg's exact size.
+    seen = {}
+
+    def fake_execute(dec, sym, **kw):
+        seen["symbol"] = sym
+        seen["side_override"] = kw.get("side_override")
+        seen["notional_override"] = kw.get("notional_override")
+        return {"executed": True, "order_id": "e", "symbol": sym,
+                "side": "buy", "notional_usdt": 500.0, "fill_value": 500.0}
+
+    captured = _seeded_tick(
+        monkeypatch, tmp_path,
+        {"decision": "EXIT", "confidence": 0.9, "reasoning": "t",
+         "scores": {}, "engine_used": "test"},
+        {"BTCUSDT": _bot_leg(symbol="BTCUSDT", side="short", entry=90000.0,
+                             current=90000.0, size=500.0)},
+        fake_execute)
+    assert seen["symbol"] == "BTCUSDT"
+    assert seen["side_override"] == "buy"
+    assert seen["notional_override"] == 500.0
+    assert captured["action_taken"]["executed"] is True
+
+
+def test_exit_leaves_adopted_seed_untouched(monkeypatch, tmp_path):
+    # An EXIT with only adopted (reconciled) inventory in the book has
+    # nothing bot-owned to flatten: the executor must never be called.
+    called = {"n": 0}
+
+    def fake_execute(dec, sym, **kw):
+        called["n"] += 1
+        return {"executed": True, "order_id": "x", "symbol": sym}
+
+    captured = _seeded_tick(
+        monkeypatch, tmp_path,
+        {"decision": "EXIT", "confidence": 0.9, "reasoning": "t",
+         "scores": {}, "engine_used": "test"},
+        {"BTCUSDT": _bot_leg(symbol="BTCUSDT", entry=90000.0,
+                             current=90000.0, reconciled=True)},
+        fake_execute)
+    assert called["n"] == 0
+    assert captured["action_taken"]["executed"] is False

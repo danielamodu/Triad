@@ -40,9 +40,10 @@ def _boot(monkeypatch, tmp_path, snapshot, opens=None, state_ok=True):
 def test_adopts_unknown_broker_balance_and_seeds_ledger(tmp_path, monkeypatch):
     report, adopted = _boot(monkeypatch, tmp_path,
                             {"BTCUSDT": {"usd": 500.0}, "__ok": True})
-    assert adopted["BTCUSDT"]["size_usd"] == 500.0
-    assert adopted["BTCUSDT"]["reconciled"] is True
-    assert adopted["BTCUSDT"]["entry_price"] == 90000.0
+    # Design B: the seed bag is adopted into the LEDGER only, never as a
+    # bot leg — the position book stays bot-only so a BTC bot leg can use
+    # the natural symbol key without colliding with adopted inventory.
+    assert adopted == {}
     assert len(report["adopted"]) == 1
     loaded, ok = risk_state.load_state(
         os.path.join(str(tmp_path), "risk_state.json"))
@@ -88,7 +89,7 @@ def test_second_boot_does_not_double_seed(tmp_path, monkeypatch):
     loaded, _ = risk_state.load_state(
         os.path.join(str(tmp_path), "risk_state.json"))
     assert loaded["exposure"] == {"BTCUSDT": 500.0}
-    assert adopted2["BTCUSDT"]["size_usd"] == 500.0
+    assert adopted2 == {}  # seed stays in the ledger, never re-enters the book
 
 
 def test_dust_balances_ignored(tmp_path, monkeypatch):

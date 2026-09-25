@@ -147,10 +147,15 @@ def _groq_worthwhile(price: dict, event: dict, sentiment: dict) -> bool:
     except Exception:
         return True
 
+# Execution routes through BTC: the rToken basket is the divergence
+# SIGNAL, but rToken spot legs reject on the demo venue, so every
+# decision fills against CRYPTO_SYMBOL. Bullish divergence BUYs BTC
+# (long), bearish SELLs BTC (trim a long or open a short), EXIT flattens
+# each open bot leg. This is what gives a real two-sided BTC track record.
 DECISION_SYMBOL = {
-    "LONG_RTOKEN": config.RTOKEN_SYMBOL,
+    "LONG_RTOKEN": config.CRYPTO_SYMBOL,
     "HEDGE_CRYPTO": config.CRYPTO_SYMBOL,
-    "EXIT": config.RTOKEN_SYMBOL,
+    "EXIT": config.CRYPTO_SYMBOL,
     "HOLD": "",
 }
 
@@ -326,12 +331,16 @@ def _sync_positions(action_taken: dict, price_signal: dict,
             by_symbol = {str(leg.get("symbol", "")).upper(): leg
                          for leg in legs}
             for symbol in list(OPEN_POSITIONS):
-                pos = OPEN_POSITIONS.pop(symbol)
-                if isinstance(pos, dict):
-                    part, residual = _close_leg(pos, by_symbol.get(symbol))
-                    realized += part
-                    if residual is not None:
-                        OPEN_POSITIONS[symbol] = residual
+                pos = OPEN_POSITIONS.get(symbol)
+                # Adopted wallet inventory is not bot risk: EXIT flattens
+                # bot legs only and leaves the seed bag untouched.
+                if not isinstance(pos, dict) or pos.get("reconciled"):
+                    continue
+                OPEN_POSITIONS.pop(symbol, None)
+                part, residual = _close_leg(pos, by_symbol.get(symbol))
+                realized += part
+                if residual is not None:
+                    OPEN_POSITIONS[symbol] = residual
             return round(realized, 4)
         for leg in legs:
             symbol = str(leg.get("symbol", "")).upper()
@@ -355,23 +364,43 @@ def _sync_positions(action_taken: dict, price_signal: dict,
                 fill_price = 0.0
             current = _current_price(symbol, price_signal)
             entry_price = fill_price if fill_price > 0 else current
+            # Side-aware netting on the natural symbol key. A buy covers
+            # an open short (else opens/extends a long); a sell reduces an
+            # open long (else opens/extends a short). Adopted (reconciled)
+            # inventory is never netted here — it lives in the ledger, not
+            # the bot book, so a bot BTC trade can't clobber the seed bag.
+            existing = OPEN_POSITIONS.get(symbol)
+            has_bot_leg = (isinstance(existing, dict)
+                           and not existing.get("reconciled"))
+            existing_side = (str(existing.get("side", "long")).lower()
+                             if has_bot_leg else "")
             if side == "buy":
-                OPEN_POSITIONS[symbol] = {
-                    "symbol": symbol, "side": "long",
-                    "size_usd": notional, "entry_price": entry_price,
-                    "current_price": current, "pnl": 0.0,
-                    "usd": notional}
+                if has_bot_leg and existing_side == "short":
+                    OPEN_POSITIONS.pop(symbol, None)
+                    part, residual = _close_leg(existing, leg)  # cover
+                    realized += part
+                    if residual is not None:
+                        OPEN_POSITIONS[symbol] = residual
+                elif has_bot_leg and existing_side == "long":
+                    _add_to_leg(existing, notional, entry_price, current)
+                else:
+                    OPEN_POSITIONS[symbol] = {
+                        "symbol": symbol, "side": "long",
+                        "size_usd": notional, "entry_price": entry_price,
+                        "current_price": current, "pnl": 0.0,
+                        "usd": notional}
             elif side == "sell":
-                if symbol in OPEN_POSITIONS:
-                    # Closing (part of) a tracked leg. Partial fills keep
-                    # a shrunken residual open instead of booking the
-                    # whole leg as closed.
-                    pos = OPEN_POSITIONS.pop(symbol)
-                    if isinstance(pos, dict):
-                        part, residual = _close_leg(pos, leg)
-                        realized += part
-                        if residual is not None:
-                            OPEN_POSITIONS[symbol] = residual
+                if has_bot_leg and existing_side == "long":
+                    # Closing (part of) a tracked long. Partial fills keep
+                    # a shrunken residual open instead of booking the whole
+                    # leg as closed.
+                    OPEN_POSITIONS.pop(symbol, None)
+                    part, residual = _close_leg(existing, leg)
+                    realized += part
+                    if residual is not None:
+                        OPEN_POSITIONS[symbol] = residual
+                elif has_bot_leg and existing_side == "short":
+                    _add_to_leg(existing, notional, entry_price, current)
                 else:
                     OPEN_POSITIONS[symbol] = {
                         "symbol": symbol, "side": "short",
@@ -410,6 +439,51 @@ def _bot_running_pnl() -> float:
         except (TypeError, ValueError):
             continue
     return round(total, 4)
+
+
+def _bot_long_exposure() -> dict:
+    """{SYMBOL: size_usd} of the bot's OPEN LONG legs only.
+
+    Feeds the cage's no-doubling gate a side-aware, bot-only exposure so a
+    fresh long is blocked only by an existing bot long on the same symbol
+    — never by adopted wallet inventory (which lives in the ledger, not
+    here) and never by a short that a buy would simply cover. Never
+    raises."""
+    out: dict = {}
+    for symbol, pos in OPEN_POSITIONS.items():
+        try:
+            if not isinstance(pos, dict) or pos.get("reconciled"):
+                continue
+            if str(pos.get("side", "long")).lower() != "long":
+                continue
+            size = float(pos.get("size_usd", 0) or 0)
+            if size > 0:
+                out[str(symbol).upper()] = round(size, 4)
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def _add_to_leg(pos: dict, notional: float, entry_price: float,
+                current: float) -> None:
+    """Grow a same-side leg in place: size sums, entry size-weights.
+
+    Keeps a repeated buy/sell on an open leg honest (one blended cost
+    basis) instead of clobbering the original entry. Never raises."""
+    try:
+        old_size = float(pos.get("size_usd", 0) or 0)
+        old_entry = float(pos.get("entry_price", 0) or 0)
+        new_size = old_size + notional
+        if new_size > 0 and old_entry > 0 and entry_price > 0:
+            blended = (old_entry * old_size + entry_price * notional) / new_size
+        else:
+            blended = entry_price or old_entry
+        pos["size_usd"] = round(new_size, 4)
+        pos["entry_price"] = round(blended, 8)
+        pos["current_price"] = current
+        pos["usd"] = pos["size_usd"]
+    except (TypeError, ValueError, ZeroDivisionError):
+        return
 
 
 def _wallet_snapshot(account: dict, broker_ok: bool,
@@ -606,14 +680,17 @@ def restore_positions(path: str = "") -> int:
 
 
 def reconcile_startup(live: bool) -> dict:
-    """Resume-from-broker: adopt live balances into tracking on boot.
+    """Resume-from-broker: reconcile live balances into the ledger on boot.
 
     Compares the broker snapshot against the persisted ledger and the
     in-memory book (bot legs restored just below). Broker balances above
-    dust with no tracked leg are adopted as long legs at the current
-    mark and seeded into the ledger (max of ledger/broker, so a restart
-    can only tighten the no-doubling gate, never loosen it). Resting open
-    orders are reported, never touched.
+    dust with no tracked leg are adopted into the LEDGER — exposure +
+    adopted baseline (max of ledger/broker, so a restart can only tighten
+    the no-doubling gate, never loosen it). The seed bag is deliberately
+    NOT added as an OPEN_POSITIONS leg: it is wallet inventory, not a bot
+    trade, and keeping the bot book bot-only lets a BTC bot leg use the
+    natural symbol key without colliding with it. Resting open orders are
+    reported, never touched.
 
     Bot-opened legs are restored first from the persisted position book
     (true entry price + armed brackets survive the restart); this
@@ -672,12 +749,12 @@ def reconcile_startup(live: bool) -> dict:
                 usd = 0.0
             if usd < _RECONCILE_DUST_USD or symbol in OPEN_POSITIONS:
                 continue
-            mark = _current_price(symbol, price)
-            OPEN_POSITIONS[symbol] = {
-                "symbol": symbol, "side": "long",
-                "size_usd": round(usd, 4), "entry_price": mark,
-                "current_price": mark, "pnl": 0.0, "usd": round(usd, 4),
-                "reconciled": True}
+            # Adopt into the LEDGER only, not the bot book: the seed bag is
+            # wallet inventory, not a bot trade, so it must not appear as an
+            # OPEN_POSITIONS leg (that would collide with a bot BTC leg on
+            # the natural key and mask the no-doubling gate). Its size still
+            # counts in exposure/adopted for the risk snapshot + baseline,
+            # and the live wallet snapshot reports the real balance.
             try:
                 prior = float(exposure.get(symbol, 0.0) or 0.0)
             except (TypeError, ValueError):
@@ -801,7 +878,12 @@ def tick(live: bool = False) -> dict:
         "drawdown_pct": drawdown,
         "day_loss_pct": day_loss,
         "daily_halted": day_loss > config.RISK_MAX_DAILY_LOSS_PCT,
-        "exposure": dict(rstate.get("exposure", {})),
+        # No-doubling gate reads bot-open LONG exposure (side-aware, from
+        # the bot book) — not raw ledger exposure, which the adopted seed
+        # bag masks. So a bot BTC long is blocked only by another bot BTC
+        # long, never by the wallet's seed inventory, and a short never
+        # blocks the buy that would cover it.
+        "exposure": _bot_long_exposure(),
         "corrupt": (not state_ok) or (not _STATE_SAVE_OK),
         "broker_dead": broker_streak >= config.RISK_BROKER_FAIL_TICKS,
         "broker_streak": broker_streak,
@@ -850,12 +932,11 @@ def tick(live: bool = False) -> dict:
         position_size_usd = size_for_confidence(
             decision.get("confidence", 0))
 
-    # The no-doubling gate checks the leg about to be traded (the
-    # basket's selected rToken for LONG, not the default symbol).
+    # The no-doubling gate checks the leg about to be traded. Execution
+    # routes through BTC, so a LONG is gated on BTC bot-long exposure — not
+    # the divergence-signal rToken. Sells (HEDGE/EXIT) bypass size gates.
     decision_name = str(decision.get("decision", "HOLD")).upper()
-    if decision_name == "LONG_RTOKEN":
-        trade_symbol = selected_rtoken
-    elif decision_name == "HEDGE_CRYPTO":
+    if decision_name in ("LONG_RTOKEN", "HEDGE_CRYPTO"):
         trade_symbol = config.CRYPTO_SYMBOL
     else:
         trade_symbol = ""
@@ -868,21 +949,37 @@ def tick(live: bool = False) -> dict:
     action_taken: dict = {"executed": False, "order_id": "",
                           "details": "not attempted"}
     if risk.get("approved") and risk.get("decision") != "HOLD":
-        # EXIT flattens both legs; other decisions touch one symbol.
-        # LONG_RTOKEN trades the selected basket leg this tick.
+        # Execution routes through BTC. LONG buys it, HEDGE sells it; EXIT
+        # flattens each open bot leg — SELLING longs and BUYING to cover
+        # shorts, each at its exact booked size (side_override +
+        # notional_override). Adopted seed inventory is never touched.
+        # {symbol: (side_override, notional_override)}
+        work: dict = {}
         if risk["decision"] == "EXIT":
-            symbols = [selected_rtoken, config.CRYPTO_SYMBOL]
+            for sym, pos in OPEN_POSITIONS.items():
+                if not isinstance(pos, dict) or pos.get("reconciled"):
+                    continue
+                try:
+                    leg_usd = float(pos.get("size_usd", 0) or 0)
+                except (TypeError, ValueError):
+                    leg_usd = 0.0
+                if leg_usd <= 0:
+                    continue  # degenerate leg: nothing to trade
+                short = str(pos.get("side", "long")).lower() == "short"
+                work[str(sym).upper()] = ("buy" if short else "sell", leg_usd)
         elif risk["decision"] == "LONG_RTOKEN":
-            symbols = [selected_rtoken]
+            work[config.CRYPTO_SYMBOL.upper()] = ("", 0.0)
         else:
-            symbols = [DECISION_SYMBOL.get(risk["decision"], "")]
+            tgt = DECISION_SYMBOL.get(risk["decision"], "")
+            if tgt:
+                work[tgt.upper()] = ("", 0.0)
         legs = []
         try:
-            # Both legs fire simultaneously (architecture: two legs execute
-            # together, not one after the other). Order is restored by
-            # symbol so logs and settlement stay deterministic; one leg's
-            # crash never blocks the other.
-            targets = sorted({s for s in symbols if s})
+            # Legs fire simultaneously (architecture: legs execute together,
+            # not one after the other). Order is restored by symbol so logs
+            # and settlement stay deterministic; one leg's crash never
+            # blocks the other.
+            targets = sorted(s for s in work if s)
             if targets:
                 decision_ctx = {"decision": risk["decision"],
                                 "confidence": decision.get(
@@ -893,7 +990,9 @@ def tick(live: bool = False) -> dict:
                         pool.submit(
                             execute, dict(decision_ctx), symbol,
                             live=live,
-                            ref_price=_current_price(symbol, price)): symbol
+                            ref_price=_current_price(symbol, price),
+                            side_override=work[symbol][0],
+                            notional_override=work[symbol][1]): symbol
                         for symbol in targets}
                     by_symbol: dict = {}
                     for future, symbol in future_of.items():

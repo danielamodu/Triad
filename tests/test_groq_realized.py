@@ -279,6 +279,65 @@ def test_sync_positions_exit_partial_keeps_residual():
     main.OPEN_POSITIONS.clear()
 
 
+def test_sync_positions_adds_to_long():
+    # A second BUY on an open bot long extends it (blended entry), not a
+    # second leg — routing every bullish call through BTC must net.
+    main.OPEN_POSITIONS.clear()
+    main.OPEN_POSITIONS["BTCUSDT"] = {
+        "symbol": "BTCUSDT", "side": "long", "size_usd": 500.0,
+        "entry_price": 90000.0, "current_price": 90000.0, "pnl": 0.0,
+        "usd": 500.0}
+    realized = main._sync_positions(
+        {"executed": True,
+         "details": {"symbol": "BTCUSDT", "side": "buy",
+                     "notional_usdt": 500.0, "fill_value": 500.0,
+                     "fill_price": 100000.0, "executed": True}},
+        {"crypto_last": "100000"}, "LONG_RTOKEN")
+    assert realized == 0.0  # adding to a leg realizes nothing
+    leg = main.OPEN_POSITIONS["BTCUSDT"]
+    assert leg["side"] == "long" and leg["size_usd"] == 1000.0
+    assert leg["entry_price"] == 95000.0  # (90000*500 + 100000*500)/1000
+    main.OPEN_POSITIONS.clear()
+
+
+def test_sync_positions_adds_to_short():
+    main.OPEN_POSITIONS.clear()
+    main.OPEN_POSITIONS["BTCUSDT"] = {
+        "symbol": "BTCUSDT", "side": "short", "size_usd": 500.0,
+        "entry_price": 90000.0, "current_price": 90000.0, "pnl": 0.0,
+        "usd": 500.0}
+    realized = main._sync_positions(
+        {"executed": True,
+         "details": {"symbol": "BTCUSDT", "side": "sell",
+                     "notional_usdt": 500.0, "fill_value": 500.0,
+                     "fill_price": 80000.0, "executed": True}},
+        {"crypto_last": "80000"}, "HEDGE_CRYPTO")
+    assert realized == 0.0
+    leg = main.OPEN_POSITIONS["BTCUSDT"]
+    assert leg["side"] == "short" and leg["size_usd"] == 1000.0
+    assert leg["entry_price"] == 85000.0  # (90000*500 + 80000*500)/1000
+    main.OPEN_POSITIONS.clear()
+
+
+def test_sync_positions_buy_covers_short():
+    # A BUY against an open bot short covers it (realizes the spread) and
+    # leaves the book flat — the two-sided path EXIT relies on.
+    main.OPEN_POSITIONS.clear()
+    main.OPEN_POSITIONS["BTCUSDT"] = {
+        "symbol": "BTCUSDT", "side": "short", "size_usd": 500.0,
+        "entry_price": 90000.0, "current_price": 89000.0, "pnl": 5.5556,
+        "usd": 500.0}
+    realized = main._sync_positions(
+        {"executed": True,
+         "details": {"symbol": "BTCUSDT", "side": "buy",
+                     "notional_usdt": 500.0, "fill_value": 495.0,
+                     "executed": True}},
+        {"crypto_last": "89000"}, "LONG_RTOKEN")
+    assert realized == 5.0  # sold-at-500 booked, bought back for 495
+    assert "BTCUSDT" not in main.OPEN_POSITIONS
+    main.OPEN_POSITIONS.clear()
+
+
 def test_append_jsonl_writes_scrubbed(tmp_path):
     path = append_jsonl(os.path.join(str(tmp_path), "t.jsonl"),
                         {"a": 1, "APIKEY": "secret"})

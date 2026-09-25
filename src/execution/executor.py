@@ -1,10 +1,16 @@
 """Order execution via bgc (paper by default, live via --live gate).
 
-Decision map:
-  LONG_RTOKEN  -> spot market BUY  selected rToken leg (qty in USDT)
-  HEDGE_CRYPTO -> spot market SELL CRYPTO_SYMBOL (trim crypto exposure)
-  EXIT         -> spot market SELL each open leg (flatten)
+Decision map (execution routes through CRYPTO_SYMBOL — the rToken basket
+is the divergence SIGNAL; BTC is the tradeable leg that fills on demo):
+  LONG_RTOKEN  -> spot market BUY  CRYPTO_SYMBOL (bullish divergence)
+  HEDGE_CRYPTO -> spot market SELL CRYPTO_SYMBOL (bearish: trim/short)
+  EXIT         -> flatten each open bot leg (SELL longs, BUY to cover
+                  shorts) via side_override + notional_override
   HOLD         -> no-op
+
+side_override forces buy/sell regardless of the decision name (covers a
+short on EXIT); notional_override closes an exact leg size instead of the
+confidence-scaled entry size. Both default off, so entries are unchanged.
 """
 import uuid
 
@@ -326,12 +332,18 @@ def _cancel_quiet(order_id: str, symbol: str, paper: bool) -> None:
 
 
 def execute(decision: dict, symbol: str, live: bool = False,
-            ref_price: float = 0.0) -> dict:
+            ref_price: float = 0.0, side_override: str = "",
+            notional_override: float = 0.0) -> dict:
     """Execute an approved decision. Returns {executed, order_id, details}.
 
     Pipeline: confidence sizing -> price-drift guard -> order sizing ->
     pre-trade validation -> place (one retry on retryable errors, same
     clientOid) -> fill settlement.
+
+    side_override ("buy"/"sell") forces the order side regardless of the
+    decision name — used to BUY-cover a short on EXIT. notional_override
+    (>0) sets an exact close size (a leg's booked USD) and bypasses the
+    confidence floor, since flattening is not a conviction-gated entry.
 
     Settlement: a broker-confirmed zero fill returns executed=False
     ("NO_FILL"); a partial fill cancels the remainder and returns
@@ -348,17 +360,30 @@ def execute(decision: dict, symbol: str, live: bool = False,
         return {"executed": False, "order_id": "",
                 "details": "HOLD: nothing to do"}
 
-    size = size_for_confidence((decision or {}).get("confidence", 0))
-    if size <= 0:
-        return {"executed": False, "order_id": "",
-                "details": "LOW_CONFIDENCE_SKIP",
-                "symbol": symbol, "side": "",
-                "notional_usdt": 0.0, "position_size_usd": 0.0,
-                "confidence": (decision or {}).get("confidence", 0)}
-    notional = min(config.RISK_MAX_POSITION_USD, size)
+    # A close passes the exact leg size (bypasses the conviction floor);
+    # an entry sizes by confidence and skips sub-floor conviction.
+    try:
+        override_notional = float(notional_override or 0.0)
+    except (TypeError, ValueError):
+        override_notional = 0.0
+    if override_notional > 0:
+        notional = min(config.RISK_MAX_POSITION_USD, override_notional)
+    else:
+        size = size_for_confidence((decision or {}).get("confidence", 0))
+        if size <= 0:
+            return {"executed": False, "order_id": "",
+                    "details": "LOW_CONFIDENCE_SKIP",
+                    "symbol": symbol, "side": "",
+                    "notional_usdt": 0.0, "position_size_usd": 0.0,
+                    "confidence": (decision or {}).get("confidence", 0)}
+        notional = min(config.RISK_MAX_POSITION_USD, size)
     paper = not live
-    side = "buy" if name == "LONG_RTOKEN" else \
-        "sell" if name in ("HEDGE_CRYPTO", "EXIT") else ""
+    forced = str(side_override or "").lower()
+    if forced in ("buy", "sell"):
+        side = forced
+    else:
+        side = "buy" if name == "LONG_RTOKEN" else \
+            "sell" if name in ("HEDGE_CRYPTO", "EXIT") else ""
     if not side:
         return {"executed": False, "order_id": "",
                 "details": f"unknown decision {name}"}

@@ -138,8 +138,9 @@ def test_restored_bot_leg_is_not_readopted_and_bracket_survives(
         raapl = main.OPEN_POSITIONS["RAAPLUSDT"]
         assert raapl["entry_price"] == 300.0  # not reset to the 306 mark
         assert raapl.get("reconciled") is not True  # still a bot leg
-        btc = main.OPEN_POSITIONS["BTCUSDT"]
-        assert btc.get("reconciled") is True  # genuinely external
+        # Design B: the BTC bag is adopted into the ledger only, never as a
+        # book leg — the position book stays bot-only.
+        assert "BTCUSDT" not in main.OPEN_POSITIONS
         assert [a["symbol"] for a in report["adopted"]] == ["BTCUSDT"]
         # Bracket survives the restart: drive RAAPL 3% below entry.
         main.OPEN_POSITIONS["RAAPLUSDT"]["current_price"] = 291.0
