@@ -19,9 +19,11 @@ PYTHON="${PYTHON:-python}"
 [ -x .venv/bin/python ] && PYTHON=.venv/bin/python
 echo "[deploy] repo $(pwd) | python: $PYTHON"
 
-# Match the running bot by interpreter+script, so we never hit the dashboard
-# (server.py) or an editor that merely has main.py open.
-BOT_PAT='python[0-9.]* main\.py'
+# Match the running bot by interpreter+script, in ANY launch form
+# (`python main.py` or `python /home/ubuntu/Triad/main.py`), so a redeploy
+# always replaces every old instance. "python" keeps it off the dashboard
+# (server.py) and an editor that merely has main.py open.
+BOT_PAT='python.*main\.py'
 
 # Refuse to deploy over uncommitted tracked changes. Runtime data (logs/,
 # bot.log) is gitignored, so it never blocks this.
