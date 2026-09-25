@@ -1,660 +1,42 @@
 [
   {
-    "timestamp": "2026-09-25T17:50:35.808692+00:00",
+    "timestamp": "2026-09-25T19:52:57.272155+00:00",
     "signal_inputs": {
       "price": {
-        "signal": "STABLE",
+        "signal": "DIVERGENCE_DETECTED",
         "direction": "RTOKEN_OUTPERFORMING",
-        "divergence_score": 0.01467,
-        "rtoken_change": 0.00968,
-        "crypto_change": -0.00499,
-        "rtoken_last": "340.03",
-        "crypto_last": "83794.91",
+        "divergence_score": 0.01882,
+        "rtoken_change": 0.01278,
+        "crypto_change": -0.00604,
+        "rtoken_last": "341.46",
+        "crypto_last": "84022.49",
         "selected_rtoken": "RAAPLUSDT",
         "basket_scores": {
-          "RAAPLUSDT": 0.01467,
-          "RNVDAUSDT": 0.00811,
-          "RTSLAUSDT": -0.01395
+          "RAAPLUSDT": 0.01882,
+          "RNVDAUSDT": 0.00972,
+          "RTSLAUSDT": -0.01578
         }
       },
       "event": {
         "signal": "BEARISH",
-        "confidence": 0.267,
-        "reason": "rss headlines over 3541 chars"
+        "confidence": 0.235,
+        "reason": "rss headlines over 3538 chars"
       },
       "sentiment": {
         "sentiment": "neutral",
-        "score": 0.489,
-        "reason": "funding z +0.56 (91 obs) + basis -3.6bps"
+        "score": 0.518,
+        "reason": "funding z +0.56 (91 obs) + basis -5.6bps"
       }
     },
     "decision": {
       "decision": "HOLD",
-      "confidence": 0.009,
-      "reasoning": "vote -0.004 from price +0.00*0.5 [no divergence (stable)], event -0.00*0.3 [event BEARISH (0.27)], sentiment -0.02*0.2 [sentiment neutral (0.49)] -> HOLD",
+      "confidence": 0.391,
+      "reasoning": "vote +0.195 from price +0.38*0.5 [divergence +1.882% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.04*0.2 [sentiment neutral (0.52)] -> HOLD",
       "scores": {
-        "price": 0.0,
+        "price": 0.3764,
         "event": -0.0,
-        "sentiment": -0.022,
-        "final": -0.0044
-      },
-      "engine_used": "weighted_fallback",
-      "fallback_reason": "groq cooldown (drift breaker)",
-      "fallback_decision": "HOLD",
-      "fallback_agree": true
-    },
-    "risk": {
-      "approved": true,
-      "decision": "HOLD",
-      "blocked_reason": ""
-    },
-    "action_taken": {
-      "executed": false,
-      "order_id": "",
-      "details": "not attempted"
-    },
-    "symbols": [
-      "RAAPLUSDT",
-      "BTCUSDT"
-    ],
-    "positions": [
-      {
-        "symbol": "BTCUSDT",
-        "side": "long",
-        "size_usd": 416299.7518,
-        "entry_price": 83846.71,
-        "current_price": 83794.91,
-        "pnl": -257.1875,
-        "usd": 416299.7518,
-        "reconciled": true
-      }
-    ],
-    "running_pnl": -257.1875,
-    "realized_pnl": -2.5877,
-    "equity_pnl": -2.5877,
-    "position_size_usd": 0.0,
-    "executed_notional_usd": 0.0,
-    "fees_usd": 0.0,
-    "wallet": {
-      "BTCUSDT": 416056.9053,
-      "USDT": 406381.7479
-    },
-    "wallet_usd": 822438.6532,
-    "balance_change_usd": 41.8504,
-    "drawdown_pct": 0.003669,
-    "mode": "paper",
-    "memory_summary": [
-      {
-        "decision": "HOLD",
-        "confidence": 0.303,
-        "executed": false,
-        "running_pnl": -421.6783,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "HOLD",
-        "confidence": 0.314,
-        "executed": false,
-        "running_pnl": -377.9366,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "HOLD",
-        "confidence": 0.286,
-        "executed": false,
-        "running_pnl": -358.573,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      }
-    ],
-    "wake_reason": "",
-    "reasoning": "vote -0.004 from price +0.00*0.5 [no divergence (stable)], event -0.00*0.3 [event BEARISH (0.27)], sentiment -0.02*0.2 [sentiment neutral (0.49)] -> HOLD"
-  },
-  {
-    "timestamp": "2026-09-25T17:55:43.765150+00:00",
-    "signal_inputs": {
-      "price": {
-        "signal": "STABLE",
-        "direction": "CRYPTO_OUTPERFORMING",
-        "divergence_score": -0.0126,
-        "rtoken_change": -0.01636,
-        "crypto_change": -0.00376,
-        "rtoken_last": "373.3",
-        "crypto_last": "83718.12",
-        "selected_rtoken": "RTSLAUSDT",
-        "basket_scores": {
-          "RAAPLUSDT": 0.0118,
-          "RNVDAUSDT": 0.00698,
-          "RTSLAUSDT": -0.0126
-        }
-      },
-      "event": {
-        "signal": "BEARISH",
-        "confidence": 0.267,
-        "reason": "rss headlines over 3541 chars"
-      },
-      "sentiment": {
-        "sentiment": "bearish",
-        "score": 0.449,
-        "reason": "funding z +0.56 (91 obs) + basis -1.0bps"
-      }
-    },
-    "decision": {
-      "decision": "HEDGE_CRYPTO",
-      "confidence": 0.55,
-      "reasoning": "Bearish sentiment and event signals suggest trimming crypto exposure to reduce risk.",
-      "dominant_signal": "sentiment",
-      "scores": {
-        "price": 0.0,
-        "event": -0.0,
-        "sentiment": -0.102,
-        "final": -0.0204
-      },
-      "engine_used": "groq",
-      "latency_ms": 1325.9,
-      "fallback_decision": "HOLD",
-      "fallback_agree": false
-    },
-    "risk": {
-      "approved": true,
-      "decision": "HEDGE_CRYPTO",
-      "blocked_reason": ""
-    },
-    "action_taken": {
-      "executed": false,
-      "order_id": "",
-      "details": {
-        "executed": false,
-        "order_id": "",
-        "details": "LOW_CONFIDENCE_SKIP",
-        "symbol": "BTCUSDT",
-        "side": "",
-        "notional_usdt": 0.0,
-        "position_size_usd": 0.0,
-        "confidence": 0.55
-      }
-    },
-    "symbols": [
-      "RTSLAUSDT",
-      "BTCUSDT"
-    ],
-    "positions": [
-      {
-        "symbol": "BTCUSDT",
-        "side": "long",
-        "size_usd": 416299.7518,
-        "entry_price": 83846.71,
-        "current_price": 83718.12,
-        "pnl": -638.4506,
-        "usd": 416299.7518,
-        "reconciled": true
-      }
-    ],
-    "running_pnl": -638.4506,
-    "realized_pnl": -2.5877,
-    "equity_pnl": -2.5877,
-    "position_size_usd": 0.0,
-    "executed_notional_usd": 0.0,
-    "fees_usd": 0.0,
-    "wallet": {
-      "BTCUSDT": 415742.2336,
-      "USDT": 406381.7479
-    },
-    "wallet_usd": 822123.9815,
-    "balance_change_usd": -314.6717,
-    "drawdown_pct": 0.004578,
-    "mode": "paper",
-    "memory_summary": [
-      {
-        "decision": "HOLD",
-        "confidence": 0.314,
-        "executed": false,
-        "running_pnl": -377.9366,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "HOLD",
-        "confidence": 0.286,
-        "executed": false,
-        "running_pnl": -358.573,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "HOLD",
-        "confidence": 0.009,
-        "executed": false,
-        "running_pnl": -257.1875,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      }
-    ],
-    "wake_reason": "",
-    "reasoning": "Bearish sentiment and event signals suggest trimming crypto exposure to reduce risk."
-  },
-  {
-    "timestamp": "2026-09-25T18:00:56.673661+00:00",
-    "signal_inputs": {
-      "price": {
-        "signal": "STABLE",
-        "direction": "CRYPTO_OUTPERFORMING",
-        "divergence_score": -0.01317,
-        "rtoken_change": -0.01617,
-        "crypto_change": -0.003,
-        "rtoken_last": "373.62",
-        "crypto_last": "83829.66",
-        "selected_rtoken": "RTSLAUSDT",
-        "basket_scores": {
-          "RAAPLUSDT": 0.01139,
-          "RNVDAUSDT": 0.00653,
-          "RTSLAUSDT": -0.01317
-        }
-      },
-      "event": {
-        "signal": "BEARISH",
-        "confidence": 0.267,
-        "reason": "rss headlines over 3541 chars"
-      },
-      "sentiment": {
-        "sentiment": "neutral",
-        "score": 0.488,
-        "reason": "funding z +0.56 (91 obs) + basis -3.6bps"
-      }
-    },
-    "decision": {
-      "decision": "HEDGE_CRYPTO",
-      "confidence": 0.6,
-      "reasoning": "Risk constraints mandate trimming the large crypto position even though signals are not strongly bearish.",
-      "dominant_signal": "price_divergence",
-      "scores": {
-        "price": 0.0,
-        "event": -0.0,
-        "sentiment": -0.024,
-        "final": -0.0048
-      },
-      "engine_used": "groq",
-      "latency_ms": 1515.2,
-      "fallback_decision": "HOLD",
-      "fallback_agree": false
-    },
-    "risk": {
-      "approved": true,
-      "decision": "HEDGE_CRYPTO",
-      "blocked_reason": ""
-    },
-    "action_taken": {
-      "executed": true,
-      "order_id": "1487440016102019072",
-      "details": {
-        "executed": true,
-        "order_id": "1487440016102019072",
-        "details": {
-          "orderId": "1487440016102019072",
-          "clientOid": "triad-c1eb7dda3a1b464d"
-        },
-        "symbol": "BTCUSDT",
-        "side": "sell",
-        "notional_usdt": 500.0,
-        "position_size_usd": 500.0,
-        "confidence": 0.6,
-        "live": false,
-        "partial": false,
-        "fill_unknown": false,
-        "client_oid": "triad-c1eb7dda3a1b464d",
-        "fill_price": 83825.6,
-        "fill_qty": 0.005963,
-        "fill_value": 499.8521,
-        "fee_usd": 0.499852,
-        "fee_coin": "USDT",
-        "order_status": "filled"
-      }
-    },
-    "symbols": [
-      "RTSLAUSDT",
-      "BTCUSDT"
-    ],
-    "positions": [
-      {
-        "symbol": "BTCUSDT",
-        "side": "long",
-        "size_usd": 415799.798,
-        "entry_price": 83846.71,
-        "current_price": 83829.66,
-        "pnl": -84.5518,
-        "usd": 415799.798,
-        "reconciled": true
-      }
-    ],
-    "running_pnl": -84.5518,
-    "realized_pnl": -2.6894,
-    "equity_pnl": -2.6894,
-    "position_size_usd": 500.0,
-    "executed_notional_usd": 499.8521,
-    "fees_usd": 0.499852,
-    "wallet": {
-      "BTCUSDT": 416243.5038,
-      "USDT": 406381.7479
-    },
-    "wallet_usd": 822625.2517,
-    "balance_change_usd": 501.2702,
-    "drawdown_pct": 0.003257,
-    "mode": "paper",
-    "memory_summary": [
-      {
-        "decision": "HOLD",
-        "confidence": 0.286,
-        "executed": false,
-        "running_pnl": -358.573,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "HOLD",
-        "confidence": 0.009,
-        "executed": false,
-        "running_pnl": -257.1875,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "HEDGE_CRYPTO",
-        "confidence": 0.55,
-        "executed": false,
-        "running_pnl": -638.4506,
-        "engine": "groq",
-        "fallback_decision": "HOLD"
-      }
-    ],
-    "wake_reason": "",
-    "reasoning": "Risk constraints mandate trimming the large crypto position even though signals are not strongly bearish."
-  },
-  {
-    "timestamp": "2026-09-25T18:06:07.032006+00:00",
-    "signal_inputs": {
-      "price": {
-        "signal": "STABLE",
-        "direction": "RTOKEN_OUTPERFORMING",
-        "divergence_score": 0.01164,
-        "rtoken_change": 0.00944,
-        "crypto_change": -0.0022,
-        "rtoken_last": "340.09",
-        "crypto_last": "83823.98",
-        "selected_rtoken": "RAAPLUSDT",
-        "basket_scores": {
-          "RAAPLUSDT": 0.01164,
-          "RNVDAUSDT": 0.0079,
-          "RTSLAUSDT": -0.01064
-        }
-      },
-      "event": {
-        "signal": "BEARISH",
-        "confidence": 0.267,
-        "reason": "rss headlines over 3541 chars"
-      },
-      "sentiment": {
-        "sentiment": "neutral",
-        "score": 0.498,
-        "reason": "funding z +0.56 (91 obs) + basis -4.2bps"
-      }
-    },
-    "decision": {
-      "decision": "LONG_RTOKEN",
-      "confidence": 0.55,
-      "reasoning": "Price divergence shows rToken outperforming crypto, so a small long on RAAPLUSDT is warranted.",
-      "dominant_signal": "price_divergence",
-      "scores": {
-        "price": 0.0,
-        "event": -0.0,
-        "sentiment": -0.004,
-        "final": -0.0008
-      },
-      "engine_used": "groq",
-      "latency_ms": 947.0,
-      "fallback_decision": "HOLD",
-      "fallback_agree": false
-    },
-    "risk": {
-      "approved": true,
-      "decision": "LONG_RTOKEN",
-      "blocked_reason": ""
-    },
-    "action_taken": {
-      "executed": false,
-      "order_id": "",
-      "details": {
-        "executed": false,
-        "order_id": "",
-        "details": "LOW_CONFIDENCE_SKIP",
-        "symbol": "RAAPLUSDT",
-        "side": "",
-        "notional_usdt": 0.0,
-        "position_size_usd": 0.0,
-        "confidence": 0.55
-      }
-    },
-    "symbols": [
-      "RAAPLUSDT",
-      "BTCUSDT"
-    ],
-    "positions": [
-      {
-        "symbol": "BTCUSDT",
-        "side": "long",
-        "size_usd": 415799.798,
-        "entry_price": 83846.71,
-        "current_price": 83823.98,
-        "pnl": -112.7191,
-        "usd": 415799.798,
-        "reconciled": true
-      }
-    ],
-    "running_pnl": -112.7191,
-    "realized_pnl": -2.6894,
-    "equity_pnl": -2.6894,
-    "position_size_usd": 0.0,
-    "executed_notional_usd": 0.0,
-    "fees_usd": 0.0,
-    "wallet": {
-      "BTCUSDT": 415680.5332,
-      "USDT": 406881.1001
-    },
-    "wallet_usd": 822561.6333,
-    "balance_change_usd": -63.6184,
-    "drawdown_pct": 0.003324,
-    "mode": "paper",
-    "memory_summary": [
-      {
-        "decision": "HOLD",
-        "confidence": 0.009,
-        "executed": false,
-        "running_pnl": -257.1875,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "HEDGE_CRYPTO",
-        "confidence": 0.55,
-        "executed": false,
-        "running_pnl": -638.4506,
-        "engine": "groq",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "HEDGE_CRYPTO",
-        "confidence": 0.6,
-        "executed": true,
-        "running_pnl": -84.5518,
-        "engine": "groq",
-        "fallback_decision": "HOLD"
-      }
-    ],
-    "wake_reason": "",
-    "reasoning": "Price divergence shows rToken outperforming crypto, so a small long on RAAPLUSDT is warranted."
-  },
-  {
-    "timestamp": "2026-09-25T18:11:14.190964+00:00",
-    "signal_inputs": {
-      "price": {
-        "signal": "STABLE",
-        "direction": "RTOKEN_OUTPERFORMING",
-        "divergence_score": 0.01163,
-        "rtoken_change": 0.00894,
-        "crypto_change": -0.00269,
-        "rtoken_last": "340.15",
-        "crypto_last": "83971.57",
-        "selected_rtoken": "RAAPLUSDT",
-        "basket_scores": {
-          "RAAPLUSDT": 0.01163,
-          "RNVDAUSDT": 0.00933,
-          "RTSLAUSDT": -0.01122
-        }
-      },
-      "event": {
-        "signal": "BEARISH",
-        "confidence": 0.267,
-        "reason": "rss headlines over 3541 chars"
-      },
-      "sentiment": {
-        "sentiment": "neutral",
-        "score": 0.491,
-        "reason": "funding z +0.56 (91 obs) + basis -3.8bps"
-      }
-    },
-    "decision": {
-      "decision": "LONG_RTOKEN",
-      "confidence": 0.55,
-      "reasoning": "Price divergence shows rToken outperforming crypto, so a small long on RAAPLUSDT is warranted.",
-      "dominant_signal": "price_divergence",
-      "scores": {
-        "price": 0.0,
-        "event": -0.0,
-        "sentiment": -0.018,
-        "final": -0.0036
-      },
-      "engine_used": "groq",
-      "latency_ms": 663.4,
-      "fallback_decision": "HOLD",
-      "fallback_agree": false
-    },
-    "risk": {
-      "approved": true,
-      "decision": "LONG_RTOKEN",
-      "blocked_reason": ""
-    },
-    "action_taken": {
-      "executed": false,
-      "order_id": "",
-      "details": {
-        "executed": false,
-        "order_id": "",
-        "details": "LOW_CONFIDENCE_SKIP",
-        "symbol": "RAAPLUSDT",
-        "side": "",
-        "notional_usdt": 0.0,
-        "position_size_usd": 0.0,
-        "confidence": 0.55
-      }
-    },
-    "symbols": [
-      "RAAPLUSDT",
-      "BTCUSDT"
-    ],
-    "positions": [
-      {
-        "symbol": "BTCUSDT",
-        "side": "long",
-        "size_usd": 415799.798,
-        "entry_price": 83846.71,
-        "current_price": 83971.57,
-        "pnl": 619.1866,
-        "usd": 415799.798,
-        "reconciled": true
-      }
-    ],
-    "running_pnl": 619.1866,
-    "realized_pnl": -2.6894,
-    "equity_pnl": -2.6894,
-    "position_size_usd": 0.0,
-    "executed_notional_usd": 0.0,
-    "fees_usd": 0.0,
-    "wallet": {
-      "BTCUSDT": 416395.7893,
-      "USDT": 406881.1001
-    },
-    "wallet_usd": 823276.8894,
-    "balance_change_usd": 715.2561,
-    "drawdown_pct": 0.001579,
-    "mode": "paper",
-    "memory_summary": [
-      {
-        "decision": "HEDGE_CRYPTO",
-        "confidence": 0.55,
-        "executed": false,
-        "running_pnl": -638.4506,
-        "engine": "groq",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "HEDGE_CRYPTO",
-        "confidence": 0.6,
-        "executed": true,
-        "running_pnl": -84.5518,
-        "engine": "groq",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "LONG_RTOKEN",
-        "confidence": 0.55,
-        "executed": false,
-        "running_pnl": -112.7191,
-        "engine": "groq",
-        "fallback_decision": "HOLD"
-      }
-    ],
-    "wake_reason": "",
-    "reasoning": "Price divergence shows rToken outperforming crypto, so a small long on RAAPLUSDT is warranted."
-  },
-  {
-    "timestamp": "2026-09-25T18:16:21.216384+00:00",
-    "signal_inputs": {
-      "price": {
-        "signal": "STABLE",
-        "direction": "RTOKEN_OUTPERFORMING",
-        "divergence_score": 0.01238,
-        "rtoken_change": 0.00854,
-        "crypto_change": -0.00384,
-        "rtoken_last": "340.14",
-        "crypto_last": "84006.47",
-        "selected_rtoken": "RAAPLUSDT",
-        "basket_scores": {
-          "RAAPLUSDT": 0.01238,
-          "RNVDAUSDT": 0.00954,
-          "RTSLAUSDT": -0.0105
-        }
-      },
-      "event": {
-        "signal": "BEARISH",
-        "confidence": 0.267,
-        "reason": "rss headlines over 3541 chars"
-      },
-      "sentiment": {
-        "sentiment": "neutral",
-        "score": 0.481,
-        "reason": "funding z +0.56 (91 obs) + basis -3.1bps"
-      }
-    },
-    "decision": {
-      "decision": "HOLD",
-      "confidence": 0.015,
-      "reasoning": "vote -0.008 from price +0.00*0.5 [no divergence (stable)], event -0.00*0.3 [event BEARISH (0.27)], sentiment -0.04*0.2 [sentiment neutral (0.48)] -> HOLD",
-      "scores": {
-        "price": 0.0,
-        "event": -0.0,
-        "sentiment": -0.038,
-        "final": -0.0076
+        "sentiment": 0.036,
+        "final": 0.1954
       },
       "engine_used": "weighted_fallback",
       "fallback_reason": "Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kk5cbpdweeavcf35rqwkmfhj` service tier `on_dem",
@@ -679,99 +61,212 @@
       {
         "symbol": "BTCUSDT",
         "side": "long",
-        "size_usd": 415799.798,
+        "size_usd": 413804.6508,
         "entry_price": 83846.71,
-        "current_price": 84006.47,
-        "pnl": 792.2574,
-        "usd": 415799.798,
+        "current_price": 84022.49,
+        "pnl": 867.5186,
+        "usd": 413804.6508,
         "reconciled": true
       }
     ],
-    "running_pnl": 792.2574,
-    "realized_pnl": -2.6894,
-    "equity_pnl": -2.6894,
+    "running_pnl": 867.5186,
+    "realized_pnl": 1.2424,
+    "equity_pnl": 1.2424,
     "position_size_usd": 0.0,
     "executed_notional_usd": 0.0,
     "fees_usd": 0.0,
     "wallet": {
-      "BTCUSDT": 416617.8992,
-      "USDT": 406881.1001
+      "BTCUSDT": 414718.6684,
+      "USDT": 408878.1801
     },
-    "wallet_usd": 823498.9993,
-    "balance_change_usd": 222.1099,
-    "drawdown_pct": 0.001166,
+    "wallet_usd": 823596.8485,
+    "balance_change_usd": -15.7712,
+    "drawdown_pct": 0.000977,
     "mode": "paper",
     "memory_summary": [
       {
-        "decision": "HEDGE_CRYPTO",
-        "confidence": 0.6,
-        "executed": true,
-        "running_pnl": -84.5518,
-        "engine": "groq",
+        "decision": "HOLD",
+        "confidence": 0.397,
+        "executed": false,
+        "running_pnl": 806.0747,
+        "engine": "weighted_fallback",
         "fallback_decision": "HOLD"
       },
       {
         "decision": "LONG_RTOKEN",
-        "confidence": 0.55,
+        "confidence": 0.65,
         "executed": false,
-        "running_pnl": -112.7191,
+        "running_pnl": 871.0226,
         "engine": "groq",
         "fallback_decision": "HOLD"
       },
       {
-        "decision": "LONG_RTOKEN",
-        "confidence": 0.55,
+        "decision": "HOLD",
+        "confidence": 0.409,
         "executed": false,
-        "running_pnl": 619.1866,
-        "engine": "groq",
+        "running_pnl": 871.4175,
+        "engine": "weighted_fallback",
         "fallback_decision": "HOLD"
       }
     ],
-    "wake_reason": "",
-    "reasoning": "vote -0.008 from price +0.00*0.5 [no divergence (stable)], event -0.00*0.3 [event BEARISH (0.27)], sentiment -0.04*0.2 [sentiment neutral (0.48)] -> HOLD"
+    "wake_reason": "divergence",
+    "reasoning": "vote +0.195 from price +0.38*0.5 [divergence +1.882% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.04*0.2 [sentiment neutral (0.52)] -> HOLD"
   },
   {
-    "timestamp": "2026-09-25T18:21:28.631556+00:00",
+    "timestamp": "2026-09-25T19:53:57.254505+00:00",
     "signal_inputs": {
       "price": {
-        "signal": "STABLE",
+        "signal": "DIVERGENCE_DETECTED",
         "direction": "RTOKEN_OUTPERFORMING",
-        "divergence_score": 0.01193,
-        "rtoken_change": 0.00812,
-        "crypto_change": -0.00381,
-        "rtoken_last": "340.04",
-        "crypto_last": "84061.25",
+        "divergence_score": 0.01818,
+        "rtoken_change": 0.01207,
+        "crypto_change": -0.00611,
+        "rtoken_last": "341.29",
+        "crypto_last": "84015.45",
         "selected_rtoken": "RAAPLUSDT",
         "basket_scores": {
-          "RAAPLUSDT": 0.01193,
-          "RNVDAUSDT": 0.00942,
-          "RTSLAUSDT": -0.00933
+          "RAAPLUSDT": 0.01818,
+          "RNVDAUSDT": 0.00986,
+          "RTSLAUSDT": -0.01516
         }
       },
       "event": {
         "signal": "BEARISH",
-        "confidence": 0.267,
-        "reason": "rss headlines over 3541 chars"
+        "confidence": 0.235,
+        "reason": "rss headlines over 3538 chars"
       },
       "sentiment": {
         "sentiment": "neutral",
-        "score": 0.494,
-        "reason": "funding z +0.56 (91 obs) + basis -4.0bps"
+        "score": 0.502,
+        "reason": "funding z +0.56 (91 obs) + basis -4.5bps"
+      }
+    },
+    "decision": {
+      "decision": "HOLD",
+      "confidence": 0.365,
+      "reasoning": "vote +0.183 from price +0.36*0.5 [divergence +1.818% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.00*0.2 [sentiment neutral (0.50)] -> HOLD",
+      "scores": {
+        "price": 0.3636,
+        "event": -0.0,
+        "sentiment": 0.004,
+        "final": 0.1826
+      },
+      "engine_used": "weighted_fallback",
+      "fallback_reason": "Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kk5cbpdweeavcf35rqwkmfhj` service tier `on_dem",
+      "fallback_decision": "HOLD",
+      "fallback_agree": true
+    },
+    "risk": {
+      "approved": true,
+      "decision": "HOLD",
+      "blocked_reason": ""
+    },
+    "action_taken": {
+      "executed": false,
+      "order_id": "",
+      "details": "not attempted"
+    },
+    "symbols": [
+      "RAAPLUSDT",
+      "BTCUSDT"
+    ],
+    "positions": [
+      {
+        "symbol": "BTCUSDT",
+        "side": "long",
+        "size_usd": 413804.6508,
+        "entry_price": 83846.71,
+        "current_price": 84015.45,
+        "pnl": 832.7744,
+        "usd": 413804.6508,
+        "reconciled": true
+      }
+    ],
+    "running_pnl": 832.7744,
+    "realized_pnl": 1.2424,
+    "equity_pnl": 1.2424,
+    "position_size_usd": 0.0,
+    "executed_notional_usd": 0.0,
+    "fees_usd": 0.0,
+    "wallet": {
+      "BTCUSDT": 414683.5062,
+      "USDT": 408878.1801
+    },
+    "wallet_usd": 823561.6863,
+    "balance_change_usd": -35.1622,
+    "drawdown_pct": 0.00106,
+    "mode": "paper",
+    "memory_summary": [
+      {
+        "decision": "LONG_RTOKEN",
+        "confidence": 0.65,
+        "executed": false,
+        "running_pnl": 871.0226,
+        "engine": "groq",
+        "fallback_decision": "HOLD"
+      },
+      {
+        "decision": "HOLD",
+        "confidence": 0.409,
+        "executed": false,
+        "running_pnl": 871.4175,
+        "engine": "weighted_fallback",
+        "fallback_decision": "HOLD"
+      },
+      {
+        "decision": "HOLD",
+        "confidence": 0.391,
+        "executed": false,
+        "running_pnl": 867.5186,
+        "engine": "weighted_fallback",
+        "fallback_decision": "HOLD"
+      }
+    ],
+    "wake_reason": "divergence",
+    "reasoning": "vote +0.183 from price +0.36*0.5 [divergence +1.818% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.00*0.2 [sentiment neutral (0.50)] -> HOLD"
+  },
+  {
+    "timestamp": "2026-09-25T19:56:03.863232+00:00",
+    "signal_inputs": {
+      "price": {
+        "signal": "DIVERGENCE_DETECTED",
+        "direction": "RTOKEN_OUTPERFORMING",
+        "divergence_score": 0.0175,
+        "rtoken_change": 0.01124,
+        "crypto_change": -0.00626,
+        "rtoken_last": "341.07",
+        "crypto_last": "84018.88",
+        "selected_rtoken": "RAAPLUSDT",
+        "basket_scores": {
+          "RAAPLUSDT": 0.0175,
+          "RNVDAUSDT": 0.00853,
+          "RTSLAUSDT": -0.01331
+        }
+      },
+      "event": {
+        "signal": "BEARISH",
+        "confidence": 0.235,
+        "reason": "rss headlines over 3538 chars"
+      },
+      "sentiment": {
+        "sentiment": "neutral",
+        "score": 0.492,
+        "reason": "funding z +0.56 (91 obs) + basis -3.9bps"
       }
     },
     "decision": {
       "decision": "LONG_RTOKEN",
-      "confidence": 0.55,
-      "reasoning": "rToken is outperforming crypto with a positive divergence score, so a small long on RAAPLUSDT aligns with the dominant price divergence signal.",
+      "confidence": 0.68,
+      "reasoning": "rToken RAAPLUSDT is outperforming BTCUSDT, so a small long on the rToken captures the relative upside while staying within the $1000 position limit",
       "dominant_signal": "price_divergence",
       "scores": {
-        "price": 0.0,
+        "price": 0.35,
         "event": -0.0,
-        "sentiment": -0.012,
-        "final": -0.0024
+        "sentiment": -0.016,
+        "final": 0.1718
       },
       "engine_used": "groq",
-      "latency_ms": 899.5,
+      "latency_ms": 60106.8,
       "fallback_decision": "HOLD",
       "fallback_agree": false
     },
@@ -786,12 +281,16 @@
       "details": {
         "executed": false,
         "order_id": "",
-        "details": "LOW_CONFIDENCE_SKIP",
+        "details": "execution failed: empty stdout (rc=1): {\n  \"ok\": false,\n  \"error\": {\n    \"type\": \"BitgetApiError\",\n    \"code\": \"400\",\n    \"category\": \"unknown\",\n    \"message\": \"HTTP 400 from Bitget: Parameter RAAPLUSDT does not exist\",\n    \"suggestion\": \"Retry later or verify endpoint parameters.\",\n    \"retryable\":",
         "symbol": "RAAPLUSDT",
-        "side": "",
-        "notional_usdt": 0.0,
-        "position_size_usd": 0.0,
-        "confidence": 0.55
+        "side": "buy",
+        "notional_usdt": 500.0,
+        "position_size_usd": 500.0,
+        "confidence": 0.68,
+        "live": false,
+        "partial": false,
+        "fill_unknown": false,
+        "client_oid": "triad-0bd27694e48c4f1a"
       }
     },
     "symbols": [
@@ -802,776 +301,98 @@
       {
         "symbol": "BTCUSDT",
         "side": "long",
-        "size_usd": 415799.798,
+        "size_usd": 413804.6508,
         "entry_price": 83846.71,
-        "current_price": 84061.25,
-        "pnl": 1063.914,
-        "usd": 415799.798,
+        "current_price": 84018.88,
+        "pnl": 849.7024,
+        "usd": 413804.6508,
         "reconciled": true
       }
     ],
-    "running_pnl": 1063.914,
-    "realized_pnl": -2.6894,
-    "equity_pnl": -2.6894,
-    "position_size_usd": 0.0,
+    "running_pnl": 849.7024,
+    "realized_pnl": 1.2424,
+    "equity_pnl": 1.2424,
+    "position_size_usd": 500.0,
     "executed_notional_usd": 0.0,
     "fees_usd": 0.0,
     "wallet": {
-      "BTCUSDT": 416841.0312,
-      "USDT": 406881.1001
+      "BTCUSDT": 414660.2353,
+      "USDT": 408878.1801
     },
-    "wallet_usd": 823722.1313,
-    "balance_change_usd": 223.132,
-    "drawdown_pct": 0.000518,
-    "mode": "paper",
-    "memory_summary": [
-      {
-        "decision": "LONG_RTOKEN",
-        "confidence": 0.55,
-        "executed": false,
-        "running_pnl": -112.7191,
-        "engine": "groq",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "LONG_RTOKEN",
-        "confidence": 0.55,
-        "executed": false,
-        "running_pnl": 619.1866,
-        "engine": "groq",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "HOLD",
-        "confidence": 0.015,
-        "executed": false,
-        "running_pnl": 792.2574,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      }
-    ],
-    "wake_reason": "",
-    "reasoning": "rToken is outperforming crypto with a positive divergence score, so a small long on RAAPLUSDT aligns with the dominant price divergence signal."
-  },
-  {
-    "timestamp": "2026-09-25T18:26:35.289001+00:00",
-    "signal_inputs": {
-      "price": {
-        "signal": "STABLE",
-        "direction": "RTOKEN_OUTPERFORMING",
-        "divergence_score": 0.01221,
-        "rtoken_change": 0.00681,
-        "crypto_change": -0.0054,
-        "rtoken_last": "339.94",
-        "crypto_last": "83992.79",
-        "selected_rtoken": "RAAPLUSDT",
-        "basket_scores": {
-          "RAAPLUSDT": 0.01221,
-          "RNVDAUSDT": 0.00926,
-          "RTSLAUSDT": -0.01185
-        }
-      },
-      "event": {
-        "signal": "BEARISH",
-        "confidence": 0.267,
-        "reason": "rss headlines over 3541 chars"
-      },
-      "sentiment": {
-        "sentiment": "neutral",
-        "score": 0.51,
-        "reason": "funding z +0.56 (91 obs) + basis -5.0bps"
-      }
-    },
-    "decision": {
-      "decision": "HOLD",
-      "confidence": 0.008,
-      "reasoning": "vote +0.004 from price +0.00*0.5 [no divergence (stable)], event -0.00*0.3 [event BEARISH (0.27)], sentiment +0.02*0.2 [sentiment neutral (0.51)] -> HOLD",
-      "scores": {
-        "price": 0.0,
-        "event": -0.0,
-        "sentiment": 0.02,
-        "final": 0.004
-      },
-      "engine_used": "weighted_fallback",
-      "fallback_reason": "groq cooldown (drift breaker)",
-      "fallback_decision": "HOLD",
-      "fallback_agree": true
-    },
-    "risk": {
-      "approved": true,
-      "decision": "HOLD",
-      "blocked_reason": ""
-    },
-    "action_taken": {
-      "executed": false,
-      "order_id": "",
-      "details": "not attempted"
-    },
-    "symbols": [
-      "RAAPLUSDT",
-      "BTCUSDT"
-    ],
-    "positions": [
-      {
-        "symbol": "BTCUSDT",
-        "side": "long",
-        "size_usd": 415799.798,
-        "entry_price": 83846.71,
-        "current_price": 83992.79,
-        "pnl": 724.4176,
-        "usd": 415799.798,
-        "reconciled": true
-      }
-    ],
-    "running_pnl": 724.4176,
-    "realized_pnl": -2.6894,
-    "equity_pnl": -2.6894,
-    "position_size_usd": 0.0,
-    "executed_notional_usd": 0.0,
-    "fees_usd": 0.0,
-    "wallet": {
-      "BTCUSDT": 416478.8079,
-      "USDT": 406881.1001
-    },
-    "wallet_usd": 823359.908,
-    "balance_change_usd": -362.2233,
-    "drawdown_pct": 0.001328,
-    "mode": "paper",
-    "memory_summary": [
-      {
-        "decision": "LONG_RTOKEN",
-        "confidence": 0.55,
-        "executed": false,
-        "running_pnl": 619.1866,
-        "engine": "groq",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "HOLD",
-        "confidence": 0.015,
-        "executed": false,
-        "running_pnl": 792.2574,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "LONG_RTOKEN",
-        "confidence": 0.55,
-        "executed": false,
-        "running_pnl": 1063.914,
-        "engine": "groq",
-        "fallback_decision": "HOLD"
-      }
-    ],
-    "wake_reason": "",
-    "reasoning": "vote +0.004 from price +0.00*0.5 [no divergence (stable)], event -0.00*0.3 [event BEARISH (0.27)], sentiment +0.02*0.2 [sentiment neutral (0.51)] -> HOLD"
-  },
-  {
-    "timestamp": "2026-09-25T18:31:41.879867+00:00",
-    "signal_inputs": {
-      "price": {
-        "signal": "STABLE",
-        "direction": "RTOKEN_OUTPERFORMING",
-        "divergence_score": 0.01277,
-        "rtoken_change": 0.00773,
-        "crypto_change": -0.00504,
-        "rtoken_last": "340.14",
-        "crypto_last": "83987.55",
-        "selected_rtoken": "RAAPLUSDT",
-        "basket_scores": {
-          "RAAPLUSDT": 0.01277,
-          "RNVDAUSDT": 0.00714,
-          "RTSLAUSDT": -0.01132
-        }
-      },
-      "event": {
-        "signal": "BEARISH",
-        "confidence": 0.267,
-        "reason": "rss headlines over 3541 chars"
-      },
-      "sentiment": {
-        "sentiment": "neutral",
-        "score": 0.488,
-        "reason": "funding z +0.56 (91 obs) + basis -3.6bps"
-      }
-    },
-    "decision": {
-      "decision": "HOLD",
-      "confidence": 0.01,
-      "reasoning": "vote -0.005 from price +0.00*0.5 [no divergence (stable)], event -0.00*0.3 [event BEARISH (0.27)], sentiment -0.02*0.2 [sentiment neutral (0.49)] -> HOLD",
-      "scores": {
-        "price": 0.0,
-        "event": -0.0,
-        "sentiment": -0.024,
-        "final": -0.0048
-      },
-      "engine_used": "weighted_fallback",
-      "fallback_reason": "groq cooldown (drift breaker)",
-      "fallback_decision": "HOLD",
-      "fallback_agree": true
-    },
-    "risk": {
-      "approved": true,
-      "decision": "HOLD",
-      "blocked_reason": ""
-    },
-    "action_taken": {
-      "executed": false,
-      "order_id": "",
-      "details": "not attempted"
-    },
-    "symbols": [
-      "RAAPLUSDT",
-      "BTCUSDT"
-    ],
-    "positions": [
-      {
-        "symbol": "BTCUSDT",
-        "side": "long",
-        "size_usd": 415799.798,
-        "entry_price": 83846.71,
-        "current_price": 83987.55,
-        "pnl": 698.4322,
-        "usd": 415799.798,
-        "reconciled": true
-      }
-    ],
-    "running_pnl": 698.4322,
-    "realized_pnl": -2.6894,
-    "equity_pnl": -2.6894,
-    "position_size_usd": 0.0,
-    "executed_notional_usd": 0.0,
-    "fees_usd": 0.0,
-    "wallet": {
-      "BTCUSDT": 416527.1443,
-      "USDT": 406881.1001
-    },
-    "wallet_usd": 823408.2444,
-    "balance_change_usd": 48.3364,
-    "drawdown_pct": 0.00139,
+    "wallet_usd": 823538.4154,
+    "balance_change_usd": -23.2709,
+    "drawdown_pct": 0.00102,
     "mode": "paper",
     "memory_summary": [
       {
         "decision": "HOLD",
-        "confidence": 0.015,
+        "confidence": 0.409,
         "executed": false,
-        "running_pnl": 792.2574,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "LONG_RTOKEN",
-        "confidence": 0.55,
-        "executed": false,
-        "running_pnl": 1063.914,
-        "engine": "groq",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "HOLD",
-        "confidence": 0.008,
-        "executed": false,
-        "running_pnl": 724.4176,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      }
-    ],
-    "wake_reason": "",
-    "reasoning": "vote -0.005 from price +0.00*0.5 [no divergence (stable)], event -0.00*0.3 [event BEARISH (0.27)], sentiment -0.02*0.2 [sentiment neutral (0.49)] -> HOLD"
-  },
-  {
-    "timestamp": "2026-09-25T18:36:49.237963+00:00",
-    "signal_inputs": {
-      "price": {
-        "signal": "STABLE",
-        "direction": "CRYPTO_OUTPERFORMING",
-        "divergence_score": -0.01261,
-        "rtoken_change": -0.01595,
-        "crypto_change": -0.00334,
-        "rtoken_last": "373.15",
-        "crypto_last": "83987.26",
-        "selected_rtoken": "RTSLAUSDT",
-        "basket_scores": {
-          "RAAPLUSDT": 0.01116,
-          "RNVDAUSDT": 0.00604,
-          "RTSLAUSDT": -0.01261
-        }
-      },
-      "event": {
-        "signal": "BEARISH",
-        "confidence": 0.267,
-        "reason": "rss headlines over 3541 chars"
-      },
-      "sentiment": {
-        "sentiment": "neutral",
-        "score": 0.5,
-        "reason": "funding z +0.56 (91 obs) + basis -4.4bps"
-      }
-    },
-    "decision": {
-      "decision": "HOLD",
-      "confidence": 0.0,
-      "reasoning": "vote +0.000 from price +0.00*0.5 [no divergence (stable)], event -0.00*0.3 [event BEARISH (0.27)], sentiment +0.00*0.2 [sentiment neutral (0.50)] -> HOLD",
-      "scores": {
-        "price": 0.0,
-        "event": -0.0,
-        "sentiment": 0.0,
-        "final": 0.0
-      },
-      "engine_used": "weighted_fallback",
-      "fallback_reason": "groq cooldown (drift breaker)",
-      "fallback_decision": "HOLD",
-      "fallback_agree": true
-    },
-    "risk": {
-      "approved": true,
-      "decision": "HOLD",
-      "blocked_reason": ""
-    },
-    "action_taken": {
-      "executed": false,
-      "order_id": "",
-      "details": "not attempted"
-    },
-    "symbols": [
-      "RTSLAUSDT",
-      "BTCUSDT"
-    ],
-    "positions": [
-      {
-        "symbol": "BTCUSDT",
-        "side": "long",
-        "size_usd": 415799.798,
-        "entry_price": 83846.71,
-        "current_price": 83987.26,
-        "pnl": 696.9941,
-        "usd": 415799.798,
-        "reconciled": true
-      }
-    ],
-    "running_pnl": 696.9941,
-    "realized_pnl": -2.6894,
-    "equity_pnl": -2.6894,
-    "position_size_usd": 0.0,
-    "executed_notional_usd": 0.0,
-    "fees_usd": 0.0,
-    "wallet": {
-      "BTCUSDT": 416562.0069,
-      "USDT": 406881.1001
-    },
-    "wallet_usd": 823443.107,
-    "balance_change_usd": 34.8626,
-    "drawdown_pct": 0.001393,
-    "mode": "paper",
-    "memory_summary": [
-      {
-        "decision": "LONG_RTOKEN",
-        "confidence": 0.55,
-        "executed": false,
-        "running_pnl": 1063.914,
-        "engine": "groq",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "HOLD",
-        "confidence": 0.008,
-        "executed": false,
-        "running_pnl": 724.4176,
+        "running_pnl": 871.4175,
         "engine": "weighted_fallback",
         "fallback_decision": "HOLD"
       },
       {
         "decision": "HOLD",
-        "confidence": 0.01,
+        "confidence": 0.391,
         "executed": false,
-        "running_pnl": 698.4322,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      }
-    ],
-    "wake_reason": "",
-    "reasoning": "vote +0.000 from price +0.00*0.5 [no divergence (stable)], event -0.00*0.3 [event BEARISH (0.27)], sentiment +0.00*0.2 [sentiment neutral (0.50)] -> HOLD"
-  },
-  {
-    "timestamp": "2026-09-25T18:41:55.462346+00:00",
-    "signal_inputs": {
-      "price": {
-        "signal": "STABLE",
-        "direction": "RTOKEN_OUTPERFORMING",
-        "divergence_score": 0.01347,
-        "rtoken_change": 0.00764,
-        "crypto_change": -0.00583,
-        "rtoken_last": "340.15",
-        "crypto_last": "83930.43",
-        "selected_rtoken": "RAAPLUSDT",
-        "basket_scores": {
-          "RAAPLUSDT": 0.01347,
-          "RNVDAUSDT": 0.00639,
-          "RTSLAUSDT": -0.01237
-        }
-      },
-      "event": {
-        "signal": "BEARISH",
-        "confidence": 0.25,
-        "reason": "rss headlines over 3531 chars"
-      },
-      "sentiment": {
-        "sentiment": "neutral",
-        "score": 0.485,
-        "reason": "funding z +0.56 (91 obs) + basis -3.4bps"
-      }
-    },
-    "decision": {
-      "decision": "HOLD",
-      "confidence": 0.012,
-      "reasoning": "vote -0.006 from price +0.00*0.5 [no divergence (stable)], event -0.00*0.3 [event BEARISH (0.25)], sentiment -0.03*0.2 [sentiment neutral (0.48)] -> HOLD",
-      "scores": {
-        "price": 0.0,
-        "event": -0.0,
-        "sentiment": -0.03,
-        "final": -0.006
-      },
-      "engine_used": "weighted_fallback",
-      "fallback_reason": "groq cooldown (drift breaker)",
-      "fallback_decision": "HOLD",
-      "fallback_agree": true
-    },
-    "risk": {
-      "approved": true,
-      "decision": "HOLD",
-      "blocked_reason": ""
-    },
-    "action_taken": {
-      "executed": false,
-      "order_id": "",
-      "details": "not attempted"
-    },
-    "symbols": [
-      "RAAPLUSDT",
-      "BTCUSDT"
-    ],
-    "positions": [
-      {
-        "symbol": "BTCUSDT",
-        "side": "long",
-        "size_usd": 415799.798,
-        "entry_price": 83846.71,
-        "current_price": 83930.43,
-        "pnl": 415.1714,
-        "usd": 415799.798,
-        "reconciled": true
-      }
-    ],
-    "running_pnl": 415.1714,
-    "realized_pnl": -2.6894,
-    "equity_pnl": -2.6894,
-    "position_size_usd": 0.0,
-    "executed_notional_usd": 0.0,
-    "fees_usd": 0.0,
-    "wallet": {
-      "BTCUSDT": 416344.4554,
-      "USDT": 406881.1001
-    },
-    "wallet_usd": 823225.5555,
-    "balance_change_usd": -217.5515,
-    "drawdown_pct": 0.002065,
-    "mode": "paper",
-    "memory_summary": [
-      {
-        "decision": "HOLD",
-        "confidence": 0.008,
-        "executed": false,
-        "running_pnl": 724.4176,
+        "running_pnl": 867.5186,
         "engine": "weighted_fallback",
         "fallback_decision": "HOLD"
       },
       {
         "decision": "HOLD",
-        "confidence": 0.01,
+        "confidence": 0.365,
         "executed": false,
-        "running_pnl": 698.4322,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "HOLD",
-        "confidence": 0.0,
-        "executed": false,
-        "running_pnl": 696.9941,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      }
-    ],
-    "wake_reason": "",
-    "reasoning": "vote -0.006 from price +0.00*0.5 [no divergence (stable)], event -0.00*0.3 [event BEARISH (0.25)], sentiment -0.03*0.2 [sentiment neutral (0.48)] -> HOLD"
-  },
-  {
-    "timestamp": "2026-09-25T18:47:03.234708+00:00",
-    "signal_inputs": {
-      "price": {
-        "signal": "STABLE",
-        "direction": "RTOKEN_OUTPERFORMING",
-        "divergence_score": 0.01298,
-        "rtoken_change": 0.00831,
-        "crypto_change": -0.00467,
-        "rtoken_last": "340.23",
-        "crypto_last": "84006.15",
-        "selected_rtoken": "RAAPLUSDT",
-        "basket_scores": {
-          "RAAPLUSDT": 0.01298,
-          "RNVDAUSDT": 0.00574,
-          "RTSLAUSDT": -0.01286
-        }
-      },
-      "event": {
-        "signal": "BEARISH",
-        "confidence": 0.25,
-        "reason": "rss headlines over 3531 chars"
-      },
-      "sentiment": {
-        "sentiment": "neutral",
-        "score": 0.517,
-        "reason": "funding z +0.56 (91 obs) + basis -5.5bps"
-      }
-    },
-    "decision": {
-      "decision": "HOLD",
-      "confidence": 0.014,
-      "reasoning": "vote +0.007 from price +0.00*0.5 [no divergence (stable)], event -0.00*0.3 [event BEARISH (0.25)], sentiment +0.03*0.2 [sentiment neutral (0.52)] -> HOLD",
-      "scores": {
-        "price": 0.0,
-        "event": -0.0,
-        "sentiment": 0.034,
-        "final": 0.0068
-      },
-      "engine_used": "weighted_fallback",
-      "fallback_reason": "groq cooldown (drift breaker)",
-      "fallback_decision": "HOLD",
-      "fallback_agree": true
-    },
-    "risk": {
-      "approved": true,
-      "decision": "HOLD",
-      "blocked_reason": ""
-    },
-    "action_taken": {
-      "executed": false,
-      "order_id": "",
-      "details": "not attempted"
-    },
-    "symbols": [
-      "RAAPLUSDT",
-      "BTCUSDT"
-    ],
-    "positions": [
-      {
-        "symbol": "BTCUSDT",
-        "side": "long",
-        "size_usd": 415799.798,
-        "entry_price": 83846.71,
-        "current_price": 84006.15,
-        "pnl": 790.6705,
-        "usd": 415799.798,
-        "reconciled": true
-      }
-    ],
-    "running_pnl": 790.6705,
-    "realized_pnl": -2.6894,
-    "equity_pnl": -2.6894,
-    "position_size_usd": 0.0,
-    "executed_notional_usd": 0.0,
-    "fees_usd": 0.0,
-    "wallet": {
-      "BTCUSDT": 416565.7122,
-      "USDT": 406881.1001
-    },
-    "wallet_usd": 823446.8123,
-    "balance_change_usd": 221.2568,
-    "drawdown_pct": 0.00117,
-    "mode": "paper",
-    "memory_summary": [
-      {
-        "decision": "HOLD",
-        "confidence": 0.01,
-        "executed": false,
-        "running_pnl": 698.4322,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "HOLD",
-        "confidence": 0.0,
-        "executed": false,
-        "running_pnl": 696.9941,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "HOLD",
-        "confidence": 0.012,
-        "executed": false,
-        "running_pnl": 415.1714,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      }
-    ],
-    "wake_reason": "",
-    "reasoning": "vote +0.007 from price +0.00*0.5 [no divergence (stable)], event -0.00*0.3 [event BEARISH (0.25)], sentiment +0.03*0.2 [sentiment neutral (0.52)] -> HOLD"
-  },
-  {
-    "timestamp": "2026-09-25T18:52:10.309548+00:00",
-    "signal_inputs": {
-      "price": {
-        "signal": "DIVERGENCE_DETECTED",
-        "direction": "RTOKEN_OUTPERFORMING",
-        "divergence_score": 0.01505,
-        "rtoken_change": 0.00859,
-        "crypto_change": -0.00646,
-        "rtoken_last": "340.3",
-        "crypto_last": "83943.02",
-        "selected_rtoken": "RAAPLUSDT",
-        "basket_scores": {
-          "RAAPLUSDT": 0.01505,
-          "RNVDAUSDT": 0.00619,
-          "RTSLAUSDT": -0.01274
-        }
-      },
-      "event": {
-        "signal": "BEARISH",
-        "confidence": 0.25,
-        "reason": "rss headlines over 3531 chars"
-      },
-      "sentiment": {
-        "sentiment": "neutral",
-        "score": 0.492,
-        "reason": "funding z +0.56 (91 obs) + basis -3.9bps"
-      }
-    },
-    "decision": {
-      "decision": "HOLD",
-      "confidence": 0.295,
-      "reasoning": "vote +0.147 from price +0.30*0.5 [divergence +1.505% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.25)], sentiment -0.02*0.2 [sentiment neutral (0.49)] -> HOLD",
-      "scores": {
-        "price": 0.301,
-        "event": -0.0,
-        "sentiment": -0.016,
-        "final": 0.1473
-      },
-      "engine_used": "weighted_fallback",
-      "fallback_reason": "groq cooldown (drift breaker)",
-      "fallback_decision": "HOLD",
-      "fallback_agree": true
-    },
-    "risk": {
-      "approved": true,
-      "decision": "HOLD",
-      "blocked_reason": ""
-    },
-    "action_taken": {
-      "executed": false,
-      "order_id": "",
-      "details": "not attempted"
-    },
-    "symbols": [
-      "RAAPLUSDT",
-      "BTCUSDT"
-    ],
-    "positions": [
-      {
-        "symbol": "BTCUSDT",
-        "side": "long",
-        "size_usd": 415799.798,
-        "entry_price": 83846.71,
-        "current_price": 83943.02,
-        "pnl": 477.6058,
-        "usd": 415799.798,
-        "reconciled": true
-      }
-    ],
-    "running_pnl": 477.6058,
-    "realized_pnl": -2.6894,
-    "equity_pnl": -2.6894,
-    "position_size_usd": 0.0,
-    "executed_notional_usd": 0.0,
-    "fees_usd": 0.0,
-    "wallet": {
-      "BTCUSDT": 416304.851,
-      "USDT": 406881.1001
-    },
-    "wallet_usd": 823185.9511,
-    "balance_change_usd": -260.8612,
-    "drawdown_pct": 0.001917,
-    "mode": "paper",
-    "memory_summary": [
-      {
-        "decision": "HOLD",
-        "confidence": 0.0,
-        "executed": false,
-        "running_pnl": 696.9941,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "HOLD",
-        "confidence": 0.012,
-        "executed": false,
-        "running_pnl": 415.1714,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "HOLD",
-        "confidence": 0.014,
-        "executed": false,
-        "running_pnl": 790.6705,
+        "running_pnl": 832.7744,
         "engine": "weighted_fallback",
         "fallback_decision": "HOLD"
       }
     ],
     "wake_reason": "divergence",
-    "reasoning": "vote +0.147 from price +0.30*0.5 [divergence +1.505% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.25)], sentiment -0.02*0.2 [sentiment neutral (0.49)] -> HOLD"
+    "reasoning": "rToken RAAPLUSDT is outperforming BTCUSDT, so a small long on the rToken captures the relative upside while staying within the $1000 position limit"
   },
   {
-    "timestamp": "2026-09-25T18:53:09.723934+00:00",
+    "timestamp": "2026-09-25T19:56:11.193540+00:00",
     "signal_inputs": {
       "price": {
         "signal": "DIVERGENCE_DETECTED",
         "direction": "RTOKEN_OUTPERFORMING",
-        "divergence_score": 0.01502,
-        "rtoken_change": 0.00882,
-        "crypto_change": -0.0062,
-        "rtoken_last": "340.38",
-        "crypto_last": "83965.68",
+        "divergence_score": 0.02001,
+        "rtoken_change": 0.01386,
+        "crypto_change": -0.00615,
+        "rtoken_last": "340.76",
+        "crypto_last": "84006.01",
         "selected_rtoken": "RAAPLUSDT",
         "basket_scores": {
-          "RAAPLUSDT": 0.01502,
-          "RNVDAUSDT": 0.0058,
-          "RTSLAUSDT": -0.01305
+          "RAAPLUSDT": 0.02001,
+          "RNVDAUSDT": 0.00895,
+          "RTSLAUSDT": -0.00991
         }
       },
       "event": {
         "signal": "BEARISH",
-        "confidence": 0.25,
-        "reason": "rss headlines over 3531 chars"
+        "confidence": 0.235,
+        "reason": "rss headlines over 3538 chars"
       },
       "sentiment": {
         "sentiment": "neutral",
-        "score": 0.5,
-        "reason": "funding z +0.56 (91 obs) + basis -4.4bps"
+        "score": 0.518,
+        "reason": "funding z +0.56 (91 obs) + basis -5.6bps"
       }
     },
     "decision": {
       "decision": "HOLD",
-      "confidence": 0.3,
-      "reasoning": "vote +0.150 from price +0.30*0.5 [divergence +1.502% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.25)], sentiment +0.00*0.2 [sentiment neutral (0.50)] -> HOLD",
+      "confidence": 0.415,
+      "reasoning": "vote +0.207 from price +0.40*0.5 [divergence +2.001% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.04*0.2 [sentiment neutral (0.52)] -> HOLD",
       "scores": {
-        "price": 0.3004,
+        "price": 0.4002,
         "event": -0.0,
-        "sentiment": 0.0,
-        "final": 0.1502
+        "sentiment": 0.036,
+        "final": 0.2073
       },
       "engine_used": "weighted_fallback",
-      "fallback_reason": "groq cooldown (drift breaker)",
+      "fallback_reason": "Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kk5cbpdweeavcf35rqwkmfhj` service tier `on_dem",
       "fallback_decision": "HOLD",
       "fallback_agree": true
     },
@@ -1593,98 +414,211 @@
       {
         "symbol": "BTCUSDT",
         "side": "long",
-        "size_usd": 415799.798,
+        "size_usd": 413804.6508,
         "entry_price": 83846.71,
-        "current_price": 83965.68,
-        "pnl": 589.9779,
-        "usd": 415799.798,
+        "current_price": 84006.01,
+        "pnl": 786.1857,
+        "usd": 413804.6508,
         "reconciled": true
       }
     ],
-    "running_pnl": 589.9779,
-    "realized_pnl": -2.6894,
-    "equity_pnl": -2.6894,
+    "running_pnl": 786.1857,
+    "realized_pnl": 1.2424,
+    "equity_pnl": 1.2424,
     "position_size_usd": 0.0,
     "executed_notional_usd": 0.0,
     "fees_usd": 0.0,
     "wallet": {
-      "BTCUSDT": 416414.7813,
-      "USDT": 406881.1001
+      "BTCUSDT": 414612.6188,
+      "USDT": 408878.1801
     },
-    "wallet_usd": 823295.8814,
-    "balance_change_usd": 109.9303,
-    "drawdown_pct": 0.001649,
+    "wallet_usd": 823490.7989,
+    "balance_change_usd": -47.6165,
+    "drawdown_pct": 0.001171,
     "mode": "paper",
     "memory_summary": [
       {
         "decision": "HOLD",
-        "confidence": 0.012,
+        "confidence": 0.391,
         "executed": false,
-        "running_pnl": 415.1714,
+        "running_pnl": 867.5186,
         "engine": "weighted_fallback",
         "fallback_decision": "HOLD"
       },
       {
         "decision": "HOLD",
-        "confidence": 0.014,
+        "confidence": 0.365,
         "executed": false,
-        "running_pnl": 790.6705,
+        "running_pnl": 832.7744,
         "engine": "weighted_fallback",
         "fallback_decision": "HOLD"
       },
       {
-        "decision": "HOLD",
-        "confidence": 0.295,
+        "decision": "LONG_RTOKEN",
+        "confidence": 0.68,
         "executed": false,
-        "running_pnl": 477.6058,
+        "running_pnl": 849.7024,
+        "engine": "groq",
+        "fallback_decision": "HOLD"
+      }
+    ],
+    "wake_reason": "divergence",
+    "reasoning": "vote +0.207 from price +0.40*0.5 [divergence +2.001% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.04*0.2 [sentiment neutral (0.52)] -> HOLD"
+  },
+  {
+    "timestamp": "2026-09-25T19:57:11.259316+00:00",
+    "signal_inputs": {
+      "price": {
+        "signal": "DIVERGENCE_DETECTED",
+        "direction": "RTOKEN_OUTPERFORMING",
+        "divergence_score": 0.01829,
+        "rtoken_change": 0.01413,
+        "crypto_change": -0.00416,
+        "rtoken_last": "340.85",
+        "crypto_last": "84022.47",
+        "selected_rtoken": "RAAPLUSDT",
+        "basket_scores": {
+          "RAAPLUSDT": 0.01829,
+          "RNVDAUSDT": 0.0075,
+          "RTSLAUSDT": -0.01112
+        }
+      },
+      "event": {
+        "signal": "BEARISH",
+        "confidence": 0.235,
+        "reason": "rss headlines over 3538 chars"
+      },
+      "sentiment": {
+        "sentiment": "neutral",
+        "score": 0.502,
+        "reason": "funding z +0.56 (91 obs) + basis -4.5bps"
+      }
+    },
+    "decision": {
+      "decision": "HOLD",
+      "confidence": 0.367,
+      "reasoning": "vote +0.184 from price +0.37*0.5 [divergence +1.829% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.00*0.2 [sentiment neutral (0.50)] -> HOLD",
+      "scores": {
+        "price": 0.3658,
+        "event": -0.0,
+        "sentiment": 0.004,
+        "final": 0.1837
+      },
+      "engine_used": "weighted_fallback",
+      "fallback_reason": "Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kk5cbpdweeavcf35rqwkmfhj` service tier `on_dem",
+      "fallback_decision": "HOLD",
+      "fallback_agree": true
+    },
+    "risk": {
+      "approved": true,
+      "decision": "HOLD",
+      "blocked_reason": ""
+    },
+    "action_taken": {
+      "executed": false,
+      "order_id": "",
+      "details": "not attempted"
+    },
+    "symbols": [
+      "RAAPLUSDT",
+      "BTCUSDT"
+    ],
+    "positions": [
+      {
+        "symbol": "BTCUSDT",
+        "side": "long",
+        "size_usd": 413804.6508,
+        "entry_price": 83846.71,
+        "current_price": 84022.47,
+        "pnl": 867.4199,
+        "usd": 413804.6508,
+        "reconciled": true
+      }
+    ],
+    "running_pnl": 867.4199,
+    "realized_pnl": 1.2424,
+    "equity_pnl": 1.2424,
+    "position_size_usd": 0.0,
+    "executed_notional_usd": 0.0,
+    "fees_usd": 0.0,
+    "wallet": {
+      "BTCUSDT": 414695.2701,
+      "USDT": 408878.1801
+    },
+    "wallet_usd": 823573.4502,
+    "balance_change_usd": 82.6513,
+    "drawdown_pct": 0.000978,
+    "mode": "paper",
+    "memory_summary": [
+      {
+        "decision": "HOLD",
+        "confidence": 0.365,
+        "executed": false,
+        "running_pnl": 832.7744,
+        "engine": "weighted_fallback",
+        "fallback_decision": "HOLD"
+      },
+      {
+        "decision": "LONG_RTOKEN",
+        "confidence": 0.68,
+        "executed": false,
+        "running_pnl": 849.7024,
+        "engine": "groq",
+        "fallback_decision": "HOLD"
+      },
+      {
+        "decision": "HOLD",
+        "confidence": 0.415,
+        "executed": false,
+        "running_pnl": 786.1857,
         "engine": "weighted_fallback",
         "fallback_decision": "HOLD"
       }
     ],
     "wake_reason": "divergence",
-    "reasoning": "vote +0.150 from price +0.30*0.5 [divergence +1.502% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.25)], sentiment +0.00*0.2 [sentiment neutral (0.50)] -> HOLD"
+    "reasoning": "vote +0.184 from price +0.37*0.5 [divergence +1.829% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.00*0.2 [sentiment neutral (0.50)] -> HOLD"
   },
   {
-    "timestamp": "2026-09-25T18:54:10.228118+00:00",
+    "timestamp": "2026-09-25T19:58:10.684054+00:00",
     "signal_inputs": {
       "price": {
-        "signal": "STABLE",
+        "signal": "DIVERGENCE_DETECTED",
         "direction": "RTOKEN_OUTPERFORMING",
-        "divergence_score": 0.01435,
-        "rtoken_change": 0.00859,
-        "crypto_change": -0.00576,
-        "rtoken_last": "340.23",
-        "crypto_last": "83965.67",
+        "divergence_score": 0.01803,
+        "rtoken_change": 0.0145,
+        "crypto_change": -0.00353,
+        "rtoken_last": "340.83",
+        "crypto_last": "84037.41",
         "selected_rtoken": "RAAPLUSDT",
         "basket_scores": {
-          "RAAPLUSDT": 0.01435,
-          "RNVDAUSDT": 0.00527,
-          "RTSLAUSDT": -0.0136
+          "RAAPLUSDT": 0.01803,
+          "RNVDAUSDT": 0.00763,
+          "RTSLAUSDT": -0.01272
         }
       },
       "event": {
         "signal": "BEARISH",
-        "confidence": 0.25,
-        "reason": "rss headlines over 3531 chars"
+        "confidence": 0.235,
+        "reason": "rss headlines over 3538 chars"
       },
       "sentiment": {
         "sentiment": "neutral",
-        "score": 0.491,
-        "reason": "funding z +0.56 (91 obs) + basis -3.8bps"
+        "score": 0.505,
+        "reason": "funding z +0.56 (91 obs) + basis -4.7bps"
       }
     },
     "decision": {
       "decision": "HOLD",
-      "confidence": 0.007,
-      "reasoning": "vote -0.004 from price +0.00*0.5 [no divergence (stable)], event -0.00*0.3 [event BEARISH (0.25)], sentiment -0.02*0.2 [sentiment neutral (0.49)] -> HOLD",
+      "confidence": 0.365,
+      "reasoning": "vote +0.182 from price +0.36*0.5 [divergence +1.803% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.01*0.2 [sentiment neutral (0.51)] -> HOLD",
       "scores": {
-        "price": 0.0,
+        "price": 0.3606,
         "event": -0.0,
-        "sentiment": -0.018,
-        "final": -0.0036
+        "sentiment": 0.01,
+        "final": 0.1823
       },
       "engine_used": "weighted_fallback",
-      "fallback_reason": "groq cooldown (drift breaker)",
+      "fallback_reason": "Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kk5cbpdweeavcf35rqwkmfhj` service tier `on_dem",
       "fallback_decision": "HOLD",
       "fallback_agree": true
     },
@@ -1706,79 +640,192 @@
       {
         "symbol": "BTCUSDT",
         "side": "long",
-        "size_usd": 415799.798,
+        "size_usd": 413804.6508,
         "entry_price": 83846.71,
-        "current_price": 83965.67,
-        "pnl": 589.9283,
-        "usd": 415799.798,
+        "current_price": 84037.41,
+        "pnl": 941.1526,
+        "usd": 413804.6508,
         "reconciled": true
       }
     ],
-    "running_pnl": 589.9283,
-    "realized_pnl": -2.6894,
-    "equity_pnl": -2.6894,
+    "running_pnl": 941.1526,
+    "realized_pnl": 1.2424,
+    "equity_pnl": 1.2424,
     "position_size_usd": 0.0,
     "executed_notional_usd": 0.0,
     "fees_usd": 0.0,
     "wallet": {
-      "BTCUSDT": 416336.5389,
-      "USDT": 406881.1001
+      "BTCUSDT": 414796.6324,
+      "USDT": 408878.1801
     },
-    "wallet_usd": 823217.639,
-    "balance_change_usd": -78.2424,
-    "drawdown_pct": 0.001649,
+    "wallet_usd": 823674.8125,
+    "balance_change_usd": 101.3623,
+    "drawdown_pct": 0.000802,
     "mode": "paper",
     "memory_summary": [
       {
-        "decision": "HOLD",
-        "confidence": 0.014,
+        "decision": "LONG_RTOKEN",
+        "confidence": 0.68,
         "executed": false,
-        "running_pnl": 790.6705,
+        "running_pnl": 849.7024,
+        "engine": "groq",
+        "fallback_decision": "HOLD"
+      },
+      {
+        "decision": "HOLD",
+        "confidence": 0.415,
+        "executed": false,
+        "running_pnl": 786.1857,
         "engine": "weighted_fallback",
         "fallback_decision": "HOLD"
       },
       {
         "decision": "HOLD",
-        "confidence": 0.295,
+        "confidence": 0.367,
         "executed": false,
-        "running_pnl": 477.6058,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "HOLD",
-        "confidence": 0.3,
-        "executed": false,
-        "running_pnl": 589.9779,
+        "running_pnl": 867.4199,
         "engine": "weighted_fallback",
         "fallback_decision": "HOLD"
       }
     ],
-    "wake_reason": "",
-    "reasoning": "vote -0.004 from price +0.00*0.5 [no divergence (stable)], event -0.00*0.3 [event BEARISH (0.25)], sentiment -0.02*0.2 [sentiment neutral (0.49)] -> HOLD"
+    "wake_reason": "divergence",
+    "reasoning": "vote +0.182 from price +0.36*0.5 [divergence +1.803% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.01*0.2 [sentiment neutral (0.51)] -> HOLD"
   },
   {
-    "timestamp": "2026-09-25T18:59:16.592114+00:00",
+    "timestamp": "2026-09-25T19:59:10.380449+00:00",
     "signal_inputs": {
       "price": {
         "signal": "DIVERGENCE_DETECTED",
-        "direction": "CRYPTO_OUTPERFORMING",
-        "divergence_score": -0.01509,
-        "rtoken_change": -0.02112,
-        "crypto_change": -0.00603,
-        "rtoken_last": "372.11",
-        "crypto_last": "83967.16",
-        "selected_rtoken": "RTSLAUSDT",
+        "direction": "RTOKEN_OUTPERFORMING",
+        "divergence_score": 0.0178,
+        "rtoken_change": 0.0144,
+        "crypto_change": -0.0034,
+        "rtoken_last": "340.93",
+        "crypto_last": "84048.01",
+        "selected_rtoken": "RAAPLUSDT",
         "basket_scores": {
-          "RAAPLUSDT": 0.01469,
-          "RNVDAUSDT": 0.00429,
-          "RTSLAUSDT": -0.01509
+          "RAAPLUSDT": 0.0178,
+          "RNVDAUSDT": 0.00687,
+          "RTSLAUSDT": -0.01265
         }
       },
       "event": {
         "signal": "BEARISH",
-        "confidence": 0.25,
-        "reason": "rss headlines over 3531 chars"
+        "confidence": 0.235,
+        "reason": "rss headlines over 3538 chars"
+      },
+      "sentiment": {
+        "sentiment": "neutral",
+        "score": 0.486,
+        "reason": "funding z +0.56 (91 obs) + basis -3.5bps"
+      }
+    },
+    "decision": {
+      "decision": "HOLD",
+      "confidence": 0.345,
+      "reasoning": "vote +0.172 from price +0.36*0.5 [divergence +1.780% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment -0.03*0.2 [sentiment neutral (0.49)] -> HOLD",
+      "scores": {
+        "price": 0.356,
+        "event": -0.0,
+        "sentiment": -0.028,
+        "final": 0.1724
+      },
+      "engine_used": "weighted_fallback",
+      "fallback_reason": "Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kk5cbpdweeavcf35rqwkmfhj` service tier `on_dem",
+      "fallback_decision": "HOLD",
+      "fallback_agree": true
+    },
+    "risk": {
+      "approved": true,
+      "decision": "HOLD",
+      "blocked_reason": ""
+    },
+    "action_taken": {
+      "executed": false,
+      "order_id": "",
+      "details": "not attempted"
+    },
+    "symbols": [
+      "RAAPLUSDT",
+      "BTCUSDT"
+    ],
+    "positions": [
+      {
+        "symbol": "BTCUSDT",
+        "side": "long",
+        "size_usd": 413804.6508,
+        "entry_price": 83846.71,
+        "current_price": 84048.01,
+        "pnl": 993.4662,
+        "usd": 413804.6508,
+        "reconciled": true
+      }
+    ],
+    "running_pnl": 993.4662,
+    "realized_pnl": 1.2424,
+    "equity_pnl": 1.2424,
+    "position_size_usd": 0.0,
+    "executed_notional_usd": 0.0,
+    "fees_usd": 0.0,
+    "wallet": {
+      "BTCUSDT": 414822.763,
+      "USDT": 408878.1801
+    },
+    "wallet_usd": 823700.9431,
+    "balance_change_usd": 26.1306,
+    "drawdown_pct": 0.000677,
+    "mode": "paper",
+    "memory_summary": [
+      {
+        "decision": "HOLD",
+        "confidence": 0.415,
+        "executed": false,
+        "running_pnl": 786.1857,
+        "engine": "weighted_fallback",
+        "fallback_decision": "HOLD"
+      },
+      {
+        "decision": "HOLD",
+        "confidence": 0.367,
+        "executed": false,
+        "running_pnl": 867.4199,
+        "engine": "weighted_fallback",
+        "fallback_decision": "HOLD"
+      },
+      {
+        "decision": "HOLD",
+        "confidence": 0.365,
+        "executed": false,
+        "running_pnl": 941.1526,
+        "engine": "weighted_fallback",
+        "fallback_decision": "HOLD"
+      }
+    ],
+    "wake_reason": "divergence",
+    "reasoning": "vote +0.172 from price +0.36*0.5 [divergence +1.780% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment -0.03*0.2 [sentiment neutral (0.49)] -> HOLD"
+  },
+  {
+    "timestamp": "2026-09-25T20:00:12.343600+00:00",
+    "signal_inputs": {
+      "price": {
+        "signal": "DIVERGENCE_DETECTED",
+        "direction": "RTOKEN_OUTPERFORMING",
+        "divergence_score": 0.01902,
+        "rtoken_change": 0.01455,
+        "crypto_change": -0.00447,
+        "rtoken_last": "340.98",
+        "crypto_last": "84016.1",
+        "selected_rtoken": "RAAPLUSDT",
+        "basket_scores": {
+          "RAAPLUSDT": 0.01902,
+          "RNVDAUSDT": 0.00661,
+          "RTSLAUSDT": -0.0117
+        }
+      },
+      "event": {
+        "signal": "BEARISH",
+        "confidence": 0.235,
+        "reason": "rss headlines over 3538 chars"
       },
       "sentiment": {
         "sentiment": "neutral",
@@ -1788,16 +835,16 @@
     },
     "decision": {
       "decision": "HOLD",
-      "confidence": 0.307,
-      "reasoning": "vote -0.153 from price -0.30*0.5 [divergence -1.509% (CRYPTO_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.25)], sentiment -0.01*0.2 [sentiment neutral (0.49)] -> HOLD",
+      "confidence": 0.376,
+      "reasoning": "vote +0.188 from price +0.38*0.5 [divergence +1.902% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment -0.01*0.2 [sentiment neutral (0.49)] -> HOLD",
       "scores": {
-        "price": -0.3018,
+        "price": 0.3804,
         "event": -0.0,
         "sentiment": -0.012,
-        "final": -0.1533
+        "final": 0.1878
       },
       "engine_used": "weighted_fallback",
-      "fallback_reason": "groq cooldown (drift breaker)",
+      "fallback_reason": "Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kk5cbpdweeavcf35rqwkmfhj` service tier `on_dem",
       "fallback_decision": "HOLD",
       "fallback_agree": true
     },
@@ -1812,105 +859,105 @@
       "details": "not attempted"
     },
     "symbols": [
-      "RTSLAUSDT",
+      "RAAPLUSDT",
       "BTCUSDT"
     ],
     "positions": [
       {
         "symbol": "BTCUSDT",
         "side": "long",
-        "size_usd": 415799.798,
+        "size_usd": 413804.6508,
         "entry_price": 83846.71,
-        "current_price": 83967.16,
-        "pnl": 597.3172,
-        "usd": 415799.798,
+        "current_price": 84016.1,
+        "pnl": 835.9824,
+        "usd": 413804.6508,
         "reconciled": true
       }
     ],
-    "running_pnl": 597.3172,
-    "realized_pnl": -2.6894,
-    "equity_pnl": -2.6894,
+    "running_pnl": 835.9824,
+    "realized_pnl": 1.2424,
+    "equity_pnl": 1.2424,
     "position_size_usd": 0.0,
     "executed_notional_usd": 0.0,
     "fees_usd": 0.0,
     "wallet": {
-      "BTCUSDT": 416436.2716,
-      "USDT": 406881.1001
+      "BTCUSDT": 414728.483,
+      "USDT": 408878.1801
     },
-    "wallet_usd": 823317.3717,
-    "balance_change_usd": 99.7327,
-    "drawdown_pct": 0.001631,
+    "wallet_usd": 823606.6631,
+    "balance_change_usd": -94.28,
+    "drawdown_pct": 0.001053,
     "mode": "paper",
     "memory_summary": [
       {
         "decision": "HOLD",
-        "confidence": 0.295,
+        "confidence": 0.367,
         "executed": false,
-        "running_pnl": 477.6058,
+        "running_pnl": 867.4199,
         "engine": "weighted_fallback",
         "fallback_decision": "HOLD"
       },
       {
         "decision": "HOLD",
-        "confidence": 0.3,
+        "confidence": 0.365,
         "executed": false,
-        "running_pnl": 589.9779,
+        "running_pnl": 941.1526,
         "engine": "weighted_fallback",
         "fallback_decision": "HOLD"
       },
       {
         "decision": "HOLD",
-        "confidence": 0.007,
+        "confidence": 0.345,
         "executed": false,
-        "running_pnl": 589.9283,
+        "running_pnl": 993.4662,
         "engine": "weighted_fallback",
         "fallback_decision": "HOLD"
       }
     ],
     "wake_reason": "divergence",
-    "reasoning": "vote -0.153 from price -0.30*0.5 [divergence -1.509% (CRYPTO_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.25)], sentiment -0.01*0.2 [sentiment neutral (0.49)] -> HOLD"
+    "reasoning": "vote +0.188 from price +0.38*0.5 [divergence +1.902% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment -0.01*0.2 [sentiment neutral (0.49)] -> HOLD"
   },
   {
-    "timestamp": "2026-09-25T19:00:16.735721+00:00",
+    "timestamp": "2026-09-25T20:02:21.900120+00:00",
     "signal_inputs": {
       "price": {
         "signal": "DIVERGENCE_DETECTED",
-        "direction": "CRYPTO_OUTPERFORMING",
-        "divergence_score": -0.01521,
-        "rtoken_change": -0.02077,
-        "crypto_change": -0.00556,
-        "rtoken_last": "372.02",
-        "crypto_last": "83991.06",
-        "selected_rtoken": "RTSLAUSDT",
+        "direction": "RTOKEN_OUTPERFORMING",
+        "divergence_score": 0.01995,
+        "rtoken_change": 0.01524,
+        "crypto_change": -0.00471,
+        "rtoken_last": "341.04",
+        "crypto_last": "83995.41",
+        "selected_rtoken": "RAAPLUSDT",
         "basket_scores": {
-          "RAAPLUSDT": 0.01443,
-          "RNVDAUSDT": 0.00482,
-          "RTSLAUSDT": -0.01521
+          "RAAPLUSDT": 0.01995,
+          "RNVDAUSDT": 0.00703,
+          "RTSLAUSDT": -0.01151
         }
       },
       "event": {
         "signal": "BEARISH",
-        "confidence": 0.25,
-        "reason": "rss headlines over 3531 chars"
+        "confidence": 0.235,
+        "reason": "rss headlines over 3538 chars"
       },
       "sentiment": {
         "sentiment": "neutral",
-        "score": 0.498,
-        "reason": "funding z +0.56 (91 obs) + basis -4.3bps"
+        "score": 0.507,
+        "reason": "funding z +0.56 (91 obs) + basis -4.9bps"
       }
     },
     "decision": {
       "decision": "HOLD",
-      "confidence": 0.306,
-      "reasoning": "vote -0.153 from price -0.30*0.5 [divergence -1.521% (CRYPTO_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.25)], sentiment -0.00*0.2 [sentiment neutral (0.50)] -> HOLD",
+      "confidence": 0.405,
+      "reasoning": "vote +0.202 from price +0.40*0.5 [divergence +1.995% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.01*0.2 [sentiment neutral (0.51)] -> HOLD",
       "scores": {
-        "price": -0.3042,
+        "price": 0.399,
         "event": -0.0,
-        "sentiment": -0.004,
-        "final": -0.1529
+        "sentiment": 0.014,
+        "final": 0.2023
       },
       "engine_used": "weighted_fallback",
-      "fallback_reason": "groq cooldown (drift breaker)",
+      "fallback_reason": "Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kk5cbpdweeavcf35rqwkmfhj` service tier `on_dem",
       "fallback_decision": "HOLD",
       "fallback_agree": true
     },
@@ -1925,106 +972,862 @@
       "details": "not attempted"
     },
     "symbols": [
-      "RTSLAUSDT",
+      "RAAPLUSDT",
       "BTCUSDT"
     ],
     "positions": [
       {
         "symbol": "BTCUSDT",
         "side": "long",
-        "size_usd": 415799.798,
-        "entry_price": 83846.71,
-        "current_price": 83991.06,
-        "pnl": 715.8385,
-        "usd": 415799.798,
+        "size_usd": 414602.5181,
+        "entry_price": 84016.98,
+        "current_price": 83995.41,
+        "pnl": -106.4425,
+        "usd": 414602.5181,
         "reconciled": true
       }
     ],
-    "running_pnl": 715.8385,
-    "realized_pnl": -2.6894,
-    "equity_pnl": -2.6894,
+    "running_pnl": -106.4425,
+    "realized_pnl": 1.2424,
+    "equity_pnl": 1.2424,
     "position_size_usd": 0.0,
     "executed_notional_usd": 0.0,
     "fees_usd": 0.0,
     "wallet": {
-      "BTCUSDT": 416545.0794,
-      "USDT": 406881.1001
+      "BTCUSDT": 414612.7502,
+      "USDT": 408878.1801
     },
-    "wallet_usd": 823426.1795,
-    "balance_change_usd": 108.8078,
-    "drawdown_pct": 0.001348,
+    "wallet_usd": 823490.9303,
+    "balance_change_usd": 0.0,
+    "drawdown_pct": 0.0033,
+    "mode": "paper",
+    "memory_summary": [],
+    "wake_reason": "divergence",
+    "reasoning": "vote +0.202 from price +0.40*0.5 [divergence +1.995% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.01*0.2 [sentiment neutral (0.51)] -> HOLD"
+  },
+  {
+    "timestamp": "2026-09-25T20:03:00.875637+00:00",
+    "signal_inputs": {
+      "price": {
+        "signal": "DIVERGENCE_DETECTED",
+        "direction": "RTOKEN_OUTPERFORMING",
+        "divergence_score": 0.01956,
+        "rtoken_change": 0.01512,
+        "crypto_change": -0.00444,
+        "rtoken_last": "341",
+        "crypto_last": "84011.27",
+        "selected_rtoken": "RAAPLUSDT",
+        "basket_scores": {
+          "RAAPLUSDT": 0.01956,
+          "RNVDAUSDT": 0.00654,
+          "RTSLAUSDT": -0.00967
+        }
+      },
+      "event": {
+        "signal": "BEARISH",
+        "confidence": 0.235,
+        "reason": "rss headlines over 3545 chars"
+      },
+      "sentiment": {
+        "sentiment": "neutral",
+        "score": 0.494,
+        "reason": "funding z +0.56 (91 obs) + basis -4.0bps"
+      }
+    },
+    "decision": {
+      "decision": "LONG_RTOKEN",
+      "confidence": 0.72,
+      "reasoning": "Price divergence shows rToken outperforming crypto, so we should buy rToken to capture upside.",
+      "dominant_signal": "price_divergence",
+      "scores": {
+        "price": 0.3912,
+        "event": -0.0,
+        "sentiment": -0.012,
+        "final": 0.1932
+      },
+      "engine_used": "groq",
+      "latency_ms": 26925.0,
+      "fallback_decision": "HOLD",
+      "fallback_agree": false
+    },
+    "risk": {
+      "approved": true,
+      "decision": "LONG_RTOKEN",
+      "blocked_reason": ""
+    },
+    "action_taken": {
+      "executed": false,
+      "order_id": "",
+      "details": {
+        "executed": false,
+        "order_id": "",
+        "details": "execution failed: empty stdout (rc=1): {\n  \"ok\": false,\n  \"error\": {\n    \"type\": \"BitgetApiError\",\n    \"code\": \"400\",\n    \"category\": \"unknown\",\n    \"message\": \"HTTP 400 from Bitget: Parameter RAAPLUSDT does not exist\",\n    \"suggestion\": \"Retry later or verify endpoint parameters.\",\n    \"retryable\":",
+        "symbol": "RAAPLUSDT",
+        "side": "buy",
+        "notional_usdt": 475.0,
+        "position_size_usd": 475.0,
+        "confidence": 0.72,
+        "live": false,
+        "partial": false,
+        "fill_unknown": false,
+        "client_oid": "triad-bfec95a49caa4729"
+      }
+    },
+    "symbols": [
+      "RAAPLUSDT",
+      "BTCUSDT"
+    ],
+    "positions": [
+      {
+        "symbol": "BTCUSDT",
+        "side": "long",
+        "size_usd": 414602.5181,
+        "entry_price": 84016.98,
+        "current_price": 84011.27,
+        "pnl": -28.1774,
+        "usd": 414602.5181,
+        "reconciled": true
+      }
+    ],
+    "running_pnl": -28.1774,
+    "realized_pnl": 1.2424,
+    "equity_pnl": 1.2424,
+    "position_size_usd": 475.0,
+    "executed_notional_usd": 0.0,
+    "fees_usd": 0.0,
+    "wallet": {
+      "BTCUSDT": 414680.3547,
+      "USDT": 408878.1801
+    },
+    "wallet_usd": 823558.5348,
+    "balance_change_usd": 67.6045,
+    "drawdown_pct": 0.003113,
     "mode": "paper",
     "memory_summary": [
       {
         "decision": "HOLD",
-        "confidence": 0.3,
+        "confidence": 0.405,
         "executed": false,
-        "running_pnl": 589.9779,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "HOLD",
-        "confidence": 0.007,
-        "executed": false,
-        "running_pnl": 589.9283,
-        "engine": "weighted_fallback",
-        "fallback_decision": "HOLD"
-      },
-      {
-        "decision": "HOLD",
-        "confidence": 0.307,
-        "executed": false,
-        "running_pnl": 597.3172,
+        "running_pnl": -106.4425,
         "engine": "weighted_fallback",
         "fallback_decision": "HOLD"
       }
     ],
     "wake_reason": "divergence",
-    "reasoning": "vote -0.153 from price -0.30*0.5 [divergence -1.521% (CRYPTO_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.25)], sentiment -0.00*0.2 [sentiment neutral (0.50)] -> HOLD"
+    "reasoning": "Price divergence shows rToken outperforming crypto, so we should buy rToken to capture upside."
   },
   {
-    "timestamp": "2026-09-25T19:01:22.208771+00:00",
+    "timestamp": "2026-09-25T20:03:28.218385+00:00",
     "signal_inputs": {
       "price": {
         "signal": "DIVERGENCE_DETECTED",
-        "direction": "CRYPTO_OUTPERFORMING",
-        "divergence_score": -0.0153,
-        "rtoken_change": -0.0205,
-        "crypto_change": -0.0052,
-        "rtoken_last": "371.99",
-        "crypto_last": "83941.23",
-        "selected_rtoken": "RTSLAUSDT",
+        "direction": "RTOKEN_OUTPERFORMING",
+        "divergence_score": 0.01974,
+        "rtoken_change": 0.01488,
+        "crypto_change": -0.00486,
+        "rtoken_last": "341",
+        "crypto_last": "83986.44",
+        "selected_rtoken": "RAAPLUSDT",
         "basket_scores": {
-          "RAAPLUSDT": 0.01448,
-          "RNVDAUSDT": 0.00417,
-          "RTSLAUSDT": -0.0153
+          "RAAPLUSDT": 0.01974,
+          "RNVDAUSDT": 0.00763,
+          "RTSLAUSDT": -0.00924
         }
       },
       "event": {
         "signal": "BEARISH",
-        "confidence": 0.25,
-        "reason": "rss headlines over 3531 chars"
+        "confidence": 0.235,
+        "reason": "rss headlines over 3545 chars"
       },
       "sentiment": {
         "sentiment": "neutral",
-        "score": 0.5,
-        "reason": "funding z +0.56 (91 obs) + basis -4.4bps"
+        "score": 0.514,
+        "reason": "funding z +0.56 (91 obs) + basis -5.3bps"
+      }
+    },
+    "decision": {
+      "decision": "HOLD",
+      "confidence": 0.406,
+      "reasoning": "vote +0.203 from price +0.39*0.5 [divergence +1.974% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.03*0.2 [sentiment neutral (0.51)] -> HOLD",
+      "scores": {
+        "price": 0.3948,
+        "event": -0.0,
+        "sentiment": 0.028,
+        "final": 0.203
+      },
+      "engine_used": "weighted_fallback",
+      "fallback_reason": "Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kk5cbpdweeavcf35rqwkmfhj` service tier `on_dem",
+      "fallback_decision": "HOLD",
+      "fallback_agree": true
+    },
+    "risk": {
+      "approved": true,
+      "decision": "HOLD",
+      "blocked_reason": ""
+    },
+    "action_taken": {
+      "executed": false,
+      "order_id": "",
+      "details": "not attempted"
+    },
+    "symbols": [
+      "RAAPLUSDT",
+      "BTCUSDT"
+    ],
+    "positions": [
+      {
+        "symbol": "BTCUSDT",
+        "side": "long",
+        "size_usd": 414602.5181,
+        "entry_price": 84016.98,
+        "current_price": 83986.44,
+        "pnl": -150.7072,
+        "usd": 414602.5181,
+        "reconciled": true
+      }
+    ],
+    "running_pnl": -150.7072,
+    "realized_pnl": 1.2424,
+    "equity_pnl": 1.2424,
+    "position_size_usd": 0.0,
+    "executed_notional_usd": 0.0,
+    "fees_usd": 0.0,
+    "wallet": {
+      "BTCUSDT": 414518.7333,
+      "USDT": 408878.1801
+    },
+    "wallet_usd": 823396.9134,
+    "balance_change_usd": -161.6214,
+    "drawdown_pct": 0.003406,
+    "mode": "paper",
+    "memory_summary": [
+      {
+        "decision": "HOLD",
+        "confidence": 0.405,
+        "executed": false,
+        "running_pnl": -106.4425,
+        "engine": "weighted_fallback",
+        "fallback_decision": "HOLD"
+      },
+      {
+        "decision": "LONG_RTOKEN",
+        "confidence": 0.72,
+        "executed": false,
+        "running_pnl": -28.1774,
+        "engine": "groq",
+        "fallback_decision": "HOLD"
+      }
+    ],
+    "wake_reason": "divergence",
+    "reasoning": "vote +0.203 from price +0.39*0.5 [divergence +1.974% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.03*0.2 [sentiment neutral (0.51)] -> HOLD"
+  },
+  {
+    "timestamp": "2026-09-25T20:04:28.160392+00:00",
+    "signal_inputs": {
+      "price": {
+        "signal": "DIVERGENCE_DETECTED",
+        "direction": "RTOKEN_OUTPERFORMING",
+        "divergence_score": 0.02022,
+        "rtoken_change": 0.01509,
+        "crypto_change": -0.00513,
+        "rtoken_last": "340.99",
+        "crypto_last": "83963.44",
+        "selected_rtoken": "RAAPLUSDT",
+        "basket_scores": {
+          "RAAPLUSDT": 0.02022,
+          "RNVDAUSDT": 0.00758,
+          "RTSLAUSDT": -0.00807
+        }
+      },
+      "event": {
+        "signal": "BEARISH",
+        "confidence": 0.235,
+        "reason": "rss headlines over 3545 chars"
+      },
+      "sentiment": {
+        "sentiment": "neutral",
+        "score": 0.504,
+        "reason": "funding z +0.56 (91 obs) + basis -4.6bps"
+      }
+    },
+    "decision": {
+      "decision": "HOLD",
+      "confidence": 0.408,
+      "reasoning": "vote +0.204 from price +0.40*0.5 [divergence +2.022% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.01*0.2 [sentiment neutral (0.50)] -> HOLD",
+      "scores": {
+        "price": 0.4044,
+        "event": -0.0,
+        "sentiment": 0.008,
+        "final": 0.2038
+      },
+      "engine_used": "weighted_fallback",
+      "fallback_reason": "Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kk5cbpdweeavcf35rqwkmfhj` service tier `on_dem",
+      "fallback_decision": "HOLD",
+      "fallback_agree": true
+    },
+    "risk": {
+      "approved": true,
+      "decision": "HOLD",
+      "blocked_reason": ""
+    },
+    "action_taken": {
+      "executed": false,
+      "order_id": "",
+      "details": "not attempted"
+    },
+    "symbols": [
+      "RAAPLUSDT",
+      "BTCUSDT"
+    ],
+    "positions": [
+      {
+        "symbol": "BTCUSDT",
+        "side": "long",
+        "size_usd": 414602.5181,
+        "entry_price": 84016.98,
+        "current_price": 83963.44,
+        "pnl": -264.2063,
+        "usd": 414602.5181,
+        "reconciled": true
+      }
+    ],
+    "running_pnl": -264.2063,
+    "realized_pnl": 1.2424,
+    "equity_pnl": 1.2424,
+    "position_size_usd": 0.0,
+    "executed_notional_usd": 0.0,
+    "fees_usd": 0.0,
+    "wallet": {
+      "BTCUSDT": 414414.3841,
+      "USDT": 408878.1801
+    },
+    "wallet_usd": 823292.5642,
+    "balance_change_usd": -104.3492,
+    "drawdown_pct": 0.003676,
+    "mode": "paper",
+    "memory_summary": [
+      {
+        "decision": "HOLD",
+        "confidence": 0.405,
+        "executed": false,
+        "running_pnl": -106.4425,
+        "engine": "weighted_fallback",
+        "fallback_decision": "HOLD"
+      },
+      {
+        "decision": "LONG_RTOKEN",
+        "confidence": 0.72,
+        "executed": false,
+        "running_pnl": -28.1774,
+        "engine": "groq",
+        "fallback_decision": "HOLD"
+      },
+      {
+        "decision": "HOLD",
+        "confidence": 0.406,
+        "executed": false,
+        "running_pnl": -150.7072,
+        "engine": "weighted_fallback",
+        "fallback_decision": "HOLD"
+      }
+    ],
+    "wake_reason": "divergence",
+    "reasoning": "vote +0.204 from price +0.40*0.5 [divergence +2.022% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.01*0.2 [sentiment neutral (0.50)] -> HOLD"
+  },
+  {
+    "timestamp": "2026-09-25T20:05:28.296180+00:00",
+    "signal_inputs": {
+      "price": {
+        "signal": "DIVERGENCE_DETECTED",
+        "direction": "RTOKEN_OUTPERFORMING",
+        "divergence_score": 0.01947,
+        "rtoken_change": 0.01482,
+        "crypto_change": -0.00465,
+        "rtoken_last": "340.91",
+        "crypto_last": "83952.17",
+        "selected_rtoken": "RAAPLUSDT",
+        "basket_scores": {
+          "RAAPLUSDT": 0.01947,
+          "RNVDAUSDT": 0.00708,
+          "RTSLAUSDT": -0.00842
+        }
+      },
+      "event": {
+        "signal": "BEARISH",
+        "confidence": 0.235,
+        "reason": "rss headlines over 3545 chars"
+      },
+      "sentiment": {
+        "sentiment": "neutral",
+        "score": 0.49,
+        "reason": "funding z +0.56 (91 obs) + basis -3.7bps"
+      }
+    },
+    "decision": {
+      "decision": "HOLD",
+      "confidence": 0.381,
+      "reasoning": "vote +0.191 from price +0.39*0.5 [divergence +1.947% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment -0.02*0.2 [sentiment neutral (0.49)] -> HOLD",
+      "scores": {
+        "price": 0.3894,
+        "event": -0.0,
+        "sentiment": -0.02,
+        "final": 0.1907
+      },
+      "engine_used": "weighted_fallback",
+      "fallback_reason": "Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kk5cbpdweeavcf35rqwkmfhj` service tier `on_dem",
+      "fallback_decision": "HOLD",
+      "fallback_agree": true
+    },
+    "risk": {
+      "approved": true,
+      "decision": "HOLD",
+      "blocked_reason": ""
+    },
+    "action_taken": {
+      "executed": false,
+      "order_id": "",
+      "details": "not attempted"
+    },
+    "symbols": [
+      "RAAPLUSDT",
+      "BTCUSDT"
+    ],
+    "positions": [
+      {
+        "symbol": "BTCUSDT",
+        "side": "long",
+        "size_usd": 414602.5181,
+        "entry_price": 84016.98,
+        "current_price": 83952.17,
+        "pnl": -319.8209,
+        "usd": 414602.5181,
+        "reconciled": true
+      }
+    ],
+    "running_pnl": -319.8209,
+    "realized_pnl": 1.2424,
+    "equity_pnl": 1.2424,
+    "position_size_usd": 0.0,
+    "executed_notional_usd": 0.0,
+    "fees_usd": 0.0,
+    "wallet": {
+      "BTCUSDT": 414380.4355,
+      "USDT": 408878.1801
+    },
+    "wallet_usd": 823258.6156,
+    "balance_change_usd": -33.9486,
+    "drawdown_pct": 0.003809,
+    "mode": "paper",
+    "memory_summary": [
+      {
+        "decision": "LONG_RTOKEN",
+        "confidence": 0.72,
+        "executed": false,
+        "running_pnl": -28.1774,
+        "engine": "groq",
+        "fallback_decision": "HOLD"
+      },
+      {
+        "decision": "HOLD",
+        "confidence": 0.406,
+        "executed": false,
+        "running_pnl": -150.7072,
+        "engine": "weighted_fallback",
+        "fallback_decision": "HOLD"
+      },
+      {
+        "decision": "HOLD",
+        "confidence": 0.408,
+        "executed": false,
+        "running_pnl": -264.2063,
+        "engine": "weighted_fallback",
+        "fallback_decision": "HOLD"
+      }
+    ],
+    "wake_reason": "divergence",
+    "reasoning": "vote +0.191 from price +0.39*0.5 [divergence +1.947% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment -0.02*0.2 [sentiment neutral (0.49)] -> HOLD"
+  },
+  {
+    "timestamp": "2026-09-25T20:06:28.218876+00:00",
+    "signal_inputs": {
+      "price": {
+        "signal": "DIVERGENCE_DETECTED",
+        "direction": "RTOKEN_OUTPERFORMING",
+        "divergence_score": 0.01999,
+        "rtoken_change": 0.01509,
+        "crypto_change": -0.0049,
+        "rtoken_last": "340.98",
+        "crypto_last": "83950.99",
+        "selected_rtoken": "RAAPLUSDT",
+        "basket_scores": {
+          "RAAPLUSDT": 0.01999,
+          "RNVDAUSDT": 0.00741,
+          "RTSLAUSDT": -0.00841
+        }
+      },
+      "event": {
+        "signal": "BEARISH",
+        "confidence": 0.235,
+        "reason": "rss headlines over 3545 chars"
+      },
+      "sentiment": {
+        "sentiment": "neutral",
+        "score": 0.502,
+        "reason": "funding z +0.56 (91 obs) + basis -4.5bps"
+      }
+    },
+    "decision": {
+      "decision": "HOLD",
+      "confidence": 0.401,
+      "reasoning": "vote +0.201 from price +0.40*0.5 [divergence +1.999% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.00*0.2 [sentiment neutral (0.50)] -> HOLD",
+      "scores": {
+        "price": 0.3998,
+        "event": -0.0,
+        "sentiment": 0.004,
+        "final": 0.2007
+      },
+      "engine_used": "weighted_fallback",
+      "fallback_reason": "Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kk5cbpdweeavcf35rqwkmfhj` service tier `on_dem",
+      "fallback_decision": "HOLD",
+      "fallback_agree": true
+    },
+    "risk": {
+      "approved": true,
+      "decision": "HOLD",
+      "blocked_reason": ""
+    },
+    "action_taken": {
+      "executed": false,
+      "order_id": "",
+      "details": "not attempted"
+    },
+    "symbols": [
+      "RAAPLUSDT",
+      "BTCUSDT"
+    ],
+    "positions": [
+      {
+        "symbol": "BTCUSDT",
+        "side": "long",
+        "size_usd": 414602.5181,
+        "entry_price": 84016.98,
+        "current_price": 83950.99,
+        "pnl": -325.6439,
+        "usd": 414602.5181,
+        "reconciled": true
+      }
+    ],
+    "running_pnl": -325.6439,
+    "realized_pnl": 1.2424,
+    "equity_pnl": 1.2424,
+    "position_size_usd": 0.0,
+    "executed_notional_usd": 0.0,
+    "fees_usd": 0.0,
+    "wallet": {
+      "BTCUSDT": 414398.0594,
+      "USDT": 408878.1801
+    },
+    "wallet_usd": 823276.2395,
+    "balance_change_usd": 17.6239,
+    "drawdown_pct": 0.003823,
+    "mode": "paper",
+    "memory_summary": [
+      {
+        "decision": "HOLD",
+        "confidence": 0.406,
+        "executed": false,
+        "running_pnl": -150.7072,
+        "engine": "weighted_fallback",
+        "fallback_decision": "HOLD"
+      },
+      {
+        "decision": "HOLD",
+        "confidence": 0.408,
+        "executed": false,
+        "running_pnl": -264.2063,
+        "engine": "weighted_fallback",
+        "fallback_decision": "HOLD"
+      },
+      {
+        "decision": "HOLD",
+        "confidence": 0.381,
+        "executed": false,
+        "running_pnl": -319.8209,
+        "engine": "weighted_fallback",
+        "fallback_decision": "HOLD"
+      }
+    ],
+    "wake_reason": "divergence",
+    "reasoning": "vote +0.201 from price +0.40*0.5 [divergence +1.999% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.00*0.2 [sentiment neutral (0.50)] -> HOLD"
+  },
+  {
+    "timestamp": "2026-09-25T20:07:28.235992+00:00",
+    "signal_inputs": {
+      "price": {
+        "signal": "DIVERGENCE_DETECTED",
+        "direction": "RTOKEN_OUTPERFORMING",
+        "divergence_score": 0.02017,
+        "rtoken_change": 0.01509,
+        "crypto_change": -0.00508,
+        "rtoken_last": "340.99",
+        "crypto_last": "83957.16",
+        "selected_rtoken": "RAAPLUSDT",
+        "basket_scores": {
+          "RAAPLUSDT": 0.02017,
+          "RNVDAUSDT": 0.00776,
+          "RTSLAUSDT": -0.00797
+        }
+      },
+      "event": {
+        "signal": "BEARISH",
+        "confidence": 0.235,
+        "reason": "rss headlines over 3545 chars"
+      },
+      "sentiment": {
+        "sentiment": "neutral",
+        "score": 0.501,
+        "reason": "funding z +0.56 (91 obs) + basis -4.5bps"
+      }
+    },
+    "decision": {
+      "decision": "HOLD",
+      "confidence": 0.404,
+      "reasoning": "vote +0.202 from price +0.40*0.5 [divergence +2.017% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.00*0.2 [sentiment neutral (0.50)] -> HOLD",
+      "scores": {
+        "price": 0.4034,
+        "event": -0.0,
+        "sentiment": 0.002,
+        "final": 0.2021
+      },
+      "engine_used": "weighted_fallback",
+      "fallback_reason": "Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kk5cbpdweeavcf35rqwkmfhj` service tier `on_dem",
+      "fallback_decision": "HOLD",
+      "fallback_agree": true
+    },
+    "risk": {
+      "approved": true,
+      "decision": "HOLD",
+      "blocked_reason": ""
+    },
+    "action_taken": {
+      "executed": false,
+      "order_id": "",
+      "details": "not attempted"
+    },
+    "symbols": [
+      "RAAPLUSDT",
+      "BTCUSDT"
+    ],
+    "positions": [
+      {
+        "symbol": "BTCUSDT",
+        "side": "long",
+        "size_usd": 414602.5181,
+        "entry_price": 84016.98,
+        "current_price": 83957.16,
+        "pnl": -295.1965,
+        "usd": 414602.5181,
+        "reconciled": true
+      }
+    ],
+    "running_pnl": -295.1965,
+    "realized_pnl": 1.2424,
+    "equity_pnl": 1.2424,
+    "position_size_usd": 0.0,
+    "executed_notional_usd": 0.0,
+    "fees_usd": 0.0,
+    "wallet": {
+      "BTCUSDT": 414386.221,
+      "USDT": 408878.1801
+    },
+    "wallet_usd": 823264.4011,
+    "balance_change_usd": -11.8384,
+    "drawdown_pct": 0.00375,
+    "mode": "paper",
+    "memory_summary": [
+      {
+        "decision": "HOLD",
+        "confidence": 0.408,
+        "executed": false,
+        "running_pnl": -264.2063,
+        "engine": "weighted_fallback",
+        "fallback_decision": "HOLD"
+      },
+      {
+        "decision": "HOLD",
+        "confidence": 0.381,
+        "executed": false,
+        "running_pnl": -319.8209,
+        "engine": "weighted_fallback",
+        "fallback_decision": "HOLD"
+      },
+      {
+        "decision": "HOLD",
+        "confidence": 0.401,
+        "executed": false,
+        "running_pnl": -325.6439,
+        "engine": "weighted_fallback",
+        "fallback_decision": "HOLD"
+      }
+    ],
+    "wake_reason": "divergence",
+    "reasoning": "vote +0.202 from price +0.40*0.5 [divergence +2.017% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.00*0.2 [sentiment neutral (0.50)] -> HOLD"
+  },
+  {
+    "timestamp": "2026-09-25T20:08:28.283809+00:00",
+    "signal_inputs": {
+      "price": {
+        "signal": "DIVERGENCE_DETECTED",
+        "direction": "RTOKEN_OUTPERFORMING",
+        "divergence_score": 0.02048,
+        "rtoken_change": 0.01503,
+        "crypto_change": -0.00545,
+        "rtoken_last": "340.91",
+        "crypto_last": "83965.75",
+        "selected_rtoken": "RAAPLUSDT",
+        "basket_scores": {
+          "RAAPLUSDT": 0.02048,
+          "RNVDAUSDT": 0.00844,
+          "RTSLAUSDT": -0.00758
+        }
+      },
+      "event": {
+        "signal": "BEARISH",
+        "confidence": 0.235,
+        "reason": "rss headlines over 3545 chars"
+      },
+      "sentiment": {
+        "sentiment": "neutral",
+        "score": 0.504,
+        "reason": "funding z +0.56 (91 obs) + basis -4.6bps"
+      }
+    },
+    "decision": {
+      "decision": "HOLD",
+      "confidence": 0.413,
+      "reasoning": "vote +0.206 from price +0.41*0.5 [divergence +2.048% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.01*0.2 [sentiment neutral (0.50)] -> HOLD",
+      "scores": {
+        "price": 0.4096,
+        "event": -0.0,
+        "sentiment": 0.008,
+        "final": 0.2064
+      },
+      "engine_used": "weighted_fallback",
+      "fallback_reason": "Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kk5cbpdweeavcf35rqwkmfhj` service tier `on_dem",
+      "fallback_decision": "HOLD",
+      "fallback_agree": true
+    },
+    "risk": {
+      "approved": true,
+      "decision": "HOLD",
+      "blocked_reason": ""
+    },
+    "action_taken": {
+      "executed": false,
+      "order_id": "",
+      "details": "not attempted"
+    },
+    "symbols": [
+      "RAAPLUSDT",
+      "BTCUSDT"
+    ],
+    "positions": [
+      {
+        "symbol": "BTCUSDT",
+        "side": "long",
+        "size_usd": 414602.5181,
+        "entry_price": 84016.98,
+        "current_price": 83965.75,
+        "pnl": -252.8071,
+        "usd": 414602.5181,
+        "reconciled": true
+      }
+    ],
+    "running_pnl": -252.8071,
+    "realized_pnl": 1.2424,
+    "equity_pnl": 1.2424,
+    "position_size_usd": 0.0,
+    "executed_notional_usd": 0.0,
+    "fees_usd": 0.0,
+    "wallet": {
+      "BTCUSDT": 414427.1853,
+      "USDT": 408878.1801
+    },
+    "wallet_usd": 823305.3654,
+    "balance_change_usd": 40.9643,
+    "drawdown_pct": 0.003649,
+    "mode": "paper",
+    "memory_summary": [
+      {
+        "decision": "HOLD",
+        "confidence": 0.381,
+        "executed": false,
+        "running_pnl": -319.8209,
+        "engine": "weighted_fallback",
+        "fallback_decision": "HOLD"
+      },
+      {
+        "decision": "HOLD",
+        "confidence": 0.401,
+        "executed": false,
+        "running_pnl": -325.6439,
+        "engine": "weighted_fallback",
+        "fallback_decision": "HOLD"
+      },
+      {
+        "decision": "HOLD",
+        "confidence": 0.404,
+        "executed": false,
+        "running_pnl": -295.1965,
+        "engine": "weighted_fallback",
+        "fallback_decision": "HOLD"
+      }
+    ],
+    "wake_reason": "divergence",
+    "reasoning": "vote +0.206 from price +0.41*0.5 [divergence +2.048% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.01*0.2 [sentiment neutral (0.50)] -> HOLD"
+  },
+  {
+    "timestamp": "2026-09-25T20:10:32.795368+00:00",
+    "signal_inputs": {
+      "price": {
+        "signal": "DIVERGENCE_DETECTED",
+        "direction": "RTOKEN_OUTPERFORMING",
+        "divergence_score": 0.02042,
+        "rtoken_change": 0.0151,
+        "crypto_change": -0.00532,
+        "rtoken_last": "340.93",
+        "crypto_last": "83961.02",
+        "selected_rtoken": "RAAPLUSDT",
+        "basket_scores": {
+          "RAAPLUSDT": 0.02042,
+          "RNVDAUSDT": 0.00831,
+          "RTSLAUSDT": -0.00792
+        }
+      },
+      "event": {
+        "signal": "BEARISH",
+        "confidence": 0.235,
+        "reason": "rss headlines over 3545 chars"
+      },
+      "sentiment": {
+        "sentiment": "neutral",
+        "score": 0.512,
+        "reason": "funding z +0.56 (91 obs) + basis -5.2bps"
       }
     },
     "decision": {
       "decision": "HEDGE_CRYPTO",
-      "confidence": 0.6,
-      "reasoning": "Crypto is outperforming the rToken, so trimming crypto exposure reduces risk while keeping the rToken leg open.",
+      "confidence": 0.68,
+      "reasoning": "Reduce crypto drawdown while staying within the $1000 position limit.",
       "dominant_signal": "price_divergence",
       "scores": {
-        "price": -0.306,
+        "price": 0.4084,
         "event": -0.0,
-        "sentiment": 0.0,
-        "final": -0.153
+        "sentiment": 0.024,
+        "final": 0.209
       },
       "engine_used": "groq",
-      "latency_ms": 952.5,
+      "latency_ms": 59897.4,
       "fallback_decision": "HOLD",
       "fallback_agree": false
     },
@@ -2035,132 +1838,131 @@
     },
     "action_taken": {
       "executed": true,
-      "order_id": "1487455222744109056",
+      "order_id": "1487472631441936384",
       "details": {
         "executed": true,
-        "order_id": "1487455222744109056",
+        "order_id": "1487472631441936384",
         "details": {
-          "orderId": "1487455222744109056",
-          "clientOid": "triad-c95bf787f67c43bd"
+          "orderId": "1487472631441936384",
+          "clientOid": "triad-bb2cc23ffd2a4938"
         },
         "symbol": "BTCUSDT",
         "side": "sell",
-        "notional_usdt": 500.0,
-        "position_size_usd": 500.0,
-        "confidence": 0.6,
+        "notional_usdt": 400.0,
+        "position_size_usd": 400.0,
+        "confidence": 0.68,
         "live": false,
         "partial": false,
         "fill_unknown": false,
-        "client_oid": "triad-c95bf787f67c43bd",
-        "fill_price": 83916.86,
-        "fill_qty": 0.005956,
-        "fill_value": 499.8088,
-        "fee_usd": 0.499809,
+        "client_oid": "triad-bb2cc23ffd2a4938",
+        "fill_price": 83933.75,
+        "fill_qty": 0.004763,
+        "fill_value": 399.7765,
+        "fee_usd": 0.399776,
         "fee_coin": "USDT",
         "order_status": "filled"
       }
     },
     "symbols": [
-      "RTSLAUSDT",
+      "RAAPLUSDT",
       "BTCUSDT"
     ],
     "positions": [
       {
         "symbol": "BTCUSDT",
         "side": "long",
-        "size_usd": 415300.552,
-        "entry_price": 83846.71,
-        "current_price": 83941.23,
-        "pnl": 468.1663,
-        "usd": 415300.552,
+        "size_usd": 414202.4751,
+        "entry_price": 84016.98,
+        "current_price": 83961.02,
+        "pnl": -275.882,
+        "usd": 414202.4751,
         "reconciled": true
       }
     ],
-    "running_pnl": 468.1663,
-    "realized_pnl": -2.1266,
-    "equity_pnl": -2.1266,
-    "position_size_usd": 500.0,
-    "executed_notional_usd": 499.8088,
-    "fees_usd": 0.499809,
+    "running_pnl": -275.882,
+    "realized_pnl": 0.9759,
+    "equity_pnl": 0.9759,
+    "position_size_usd": 400.0,
+    "executed_notional_usd": 399.7765,
+    "fees_usd": 0.399776,
     "wallet": {
-      "BTCUSDT": 416300.9621,
-      "USDT": 406881.1001
+      "BTCUSDT": 414417.1823,
+      "USDT": 408878.1801
     },
-    "wallet_usd": 823182.0622,
-    "balance_change_usd": -244.1173,
-    "drawdown_pct": 0.001938,
+    "wallet_usd": 823295.3624,
+    "balance_change_usd": -10.003,
+    "drawdown_pct": 0.003705,
     "mode": "paper",
     "memory_summary": [
       {
         "decision": "HOLD",
-        "confidence": 0.007,
+        "confidence": 0.401,
         "executed": false,
-        "running_pnl": 589.9283,
+        "running_pnl": -325.6439,
         "engine": "weighted_fallback",
         "fallback_decision": "HOLD"
       },
       {
         "decision": "HOLD",
-        "confidence": 0.307,
+        "confidence": 0.404,
         "executed": false,
-        "running_pnl": 597.3172,
+        "running_pnl": -295.1965,
         "engine": "weighted_fallback",
         "fallback_decision": "HOLD"
       },
       {
         "decision": "HOLD",
-        "confidence": 0.306,
+        "confidence": 0.413,
         "executed": false,
-        "running_pnl": 715.8385,
+        "running_pnl": -252.8071,
         "engine": "weighted_fallback",
         "fallback_decision": "HOLD"
       }
     ],
     "wake_reason": "divergence",
-    "reasoning": "Crypto is outperforming the rToken, so trimming crypto exposure reduces risk while keeping the rToken leg open."
+    "reasoning": "Reduce crypto drawdown while staying within the $1000 position limit."
   },
   {
-    "timestamp": "2026-09-25T19:02:17.743003+00:00",
+    "timestamp": "2026-09-25T20:10:39.226162+00:00",
     "signal_inputs": {
       "price": {
         "signal": "DIVERGENCE_DETECTED",
-        "direction": "CRYPTO_OUTPERFORMING",
-        "divergence_score": -0.01615,
-        "rtoken_change": -0.02078,
-        "crypto_change": -0.00463,
-        "rtoken_last": "371.72",
-        "crypto_last": "83955.8",
-        "selected_rtoken": "RTSLAUSDT",
+        "direction": "RTOKEN_OUTPERFORMING",
+        "divergence_score": 0.02014,
+        "rtoken_change": 0.01477,
+        "crypto_change": -0.00537,
+        "rtoken_last": "340.86",
+        "crypto_last": "83960.35",
+        "selected_rtoken": "RAAPLUSDT",
         "basket_scores": {
-          "RAAPLUSDT": 0.01364,
-          "RNVDAUSDT": 0.00396,
-          "RTSLAUSDT": -0.01615
+          "RAAPLUSDT": 0.02014,
+          "RNVDAUSDT": 0.00805,
+          "RTSLAUSDT": -0.00817
         }
       },
       "event": {
         "signal": "BEARISH",
-        "confidence": 0.25,
-        "reason": "rss headlines over 3531 chars"
+        "confidence": 0.235,
+        "reason": "rss headlines over 3545 chars"
       },
       "sentiment": {
         "sentiment": "neutral",
-        "score": 0.498,
-        "reason": "funding z +0.56 (91 obs) + basis -4.2bps"
+        "score": 0.501,
+        "reason": "funding z +0.56 (91 obs) + basis -4.5bps"
       }
     },
     "decision": {
       "decision": "HOLD",
-      "confidence": 0.7,
-      "reasoning": "Crypto is outperforming rToken per price divergence, event bearish confidence is low and sentiment neutral, so maintaining the current long crypto position is prudent.",
-      "dominant_signal": "price_divergence",
+      "confidence": 0.404,
+      "reasoning": "vote +0.202 from price +0.40*0.5 [divergence +2.014% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.00*0.2 [sentiment neutral (0.50)] -> HOLD",
       "scores": {
-        "price": -0.323,
+        "price": 0.4028,
         "event": -0.0,
-        "sentiment": -0.004,
-        "final": -0.1623
+        "sentiment": 0.002,
+        "final": 0.2018
       },
-      "engine_used": "groq",
-      "latency_ms": 1052.2,
+      "engine_used": "weighted_fallback",
+      "fallback_reason": "Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kk5cbpdweeavcf35rqwkmfhj` service tier `on_dem",
       "fallback_decision": "HOLD",
       "fallback_agree": true
     },
@@ -2175,106 +1977,105 @@
       "details": "not attempted"
     },
     "symbols": [
-      "RTSLAUSDT",
+      "RAAPLUSDT",
       "BTCUSDT"
     ],
     "positions": [
       {
         "symbol": "BTCUSDT",
         "side": "long",
-        "size_usd": 415300.552,
-        "entry_price": 83846.71,
-        "current_price": 83955.8,
-        "pnl": 540.3329,
-        "usd": 415300.552,
+        "size_usd": 414202.4751,
+        "entry_price": 84016.98,
+        "current_price": 83960.35,
+        "pnl": -279.1851,
+        "usd": 414202.4751,
         "reconciled": true
       }
     ],
-    "running_pnl": 540.3329,
-    "realized_pnl": -2.1266,
-    "equity_pnl": -2.1266,
+    "running_pnl": -279.1851,
+    "realized_pnl": 0.9759,
+    "equity_pnl": 0.9759,
     "position_size_usd": 0.0,
     "executed_notional_usd": 0.0,
     "fees_usd": 0.0,
     "wallet": {
-      "BTCUSDT": 415850.2311,
-      "USDT": 407380.4092
+      "BTCUSDT": 414032.4117,
+      "USDT": 409277.5568
     },
-    "wallet_usd": 823230.6403,
-    "balance_change_usd": 48.5781,
-    "drawdown_pct": 0.001766,
+    "wallet_usd": 823309.9685,
+    "balance_change_usd": 14.6061,
+    "drawdown_pct": 0.003713,
     "mode": "paper",
     "memory_summary": [
       {
         "decision": "HOLD",
-        "confidence": 0.307,
+        "confidence": 0.404,
         "executed": false,
-        "running_pnl": 597.3172,
+        "running_pnl": -295.1965,
         "engine": "weighted_fallback",
         "fallback_decision": "HOLD"
       },
       {
         "decision": "HOLD",
-        "confidence": 0.306,
+        "confidence": 0.413,
         "executed": false,
-        "running_pnl": 715.8385,
+        "running_pnl": -252.8071,
         "engine": "weighted_fallback",
         "fallback_decision": "HOLD"
       },
       {
         "decision": "HEDGE_CRYPTO",
-        "confidence": 0.6,
+        "confidence": 0.68,
         "executed": true,
-        "running_pnl": 468.1663,
+        "running_pnl": -275.882,
         "engine": "groq",
         "fallback_decision": "HOLD"
       }
     ],
     "wake_reason": "divergence",
-    "reasoning": "Crypto is outperforming rToken per price divergence, event bearish confidence is low and sentiment neutral, so maintaining the current long crypto position is prudent."
+    "reasoning": "vote +0.202 from price +0.40*0.5 [divergence +2.014% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.00*0.2 [sentiment neutral (0.50)] -> HOLD"
   },
   {
-    "timestamp": "2026-09-25T19:03:17.571570+00:00",
+    "timestamp": "2026-09-25T20:11:39.457329+00:00",
     "signal_inputs": {
       "price": {
-        "signal": "STABLE",
-        "direction": "CRYPTO_OUTPERFORMING",
-        "divergence_score": -0.01475,
-        "rtoken_change": -0.01918,
-        "crypto_change": -0.00443,
-        "rtoken_last": "371.83",
-        "crypto_last": "83942.69",
-        "selected_rtoken": "RTSLAUSDT",
+        "signal": "DIVERGENCE_DETECTED",
+        "direction": "RTOKEN_OUTPERFORMING",
+        "divergence_score": 0.02052,
+        "rtoken_change": 0.01531,
+        "crypto_change": -0.00521,
+        "rtoken_last": "340.86",
+        "crypto_last": "83960.17",
+        "selected_rtoken": "RAAPLUSDT",
         "basket_scores": {
-          "RAAPLUSDT": 0.01422,
-          "RNVDAUSDT": 0.00408,
-          "RTSLAUSDT": -0.01475
+          "RAAPLUSDT": 0.02052,
+          "RNVDAUSDT": 0.00794,
+          "RTSLAUSDT": -0.00817
         }
       },
       "event": {
         "signal": "BEARISH",
-        "confidence": 0.25,
-        "reason": "rss headlines over 3531 chars"
+        "confidence": 0.235,
+        "reason": "rss headlines over 3545 chars"
       },
       "sentiment": {
         "sentiment": "neutral",
-        "score": 0.487,
-        "reason": "funding z +0.56 (91 obs) + basis -3.5bps"
+        "score": 0.505,
+        "reason": "funding z +0.56 (91 obs) + basis -4.7bps"
       }
     },
     "decision": {
       "decision": "HOLD",
-      "confidence": 0.7,
-      "reasoning": "Price divergence indicates crypto is outperforming rToken, so no action is needed.",
-      "dominant_signal": "price_divergence",
+      "confidence": 0.414,
+      "reasoning": "vote +0.207 from price +0.41*0.5 [divergence +2.052% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.01*0.2 [sentiment neutral (0.51)] -> HOLD",
       "scores": {
-        "price": 0.0,
+        "price": 0.4104,
         "event": -0.0,
-        "sentiment": -0.026,
-        "final": -0.0052
+        "sentiment": 0.01,
+        "final": 0.2072
       },
-      "engine_used": "groq",
-      "latency_ms": 990.0,
+      "engine_used": "weighted_fallback",
+      "fallback_reason": "Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kk5cbpdweeavcf35rqwkmfhj` service tier `on_dem",
       "fallback_decision": "HOLD",
       "fallback_agree": true
     },
@@ -2289,62 +2090,175 @@
       "details": "not attempted"
     },
     "symbols": [
-      "RTSLAUSDT",
+      "RAAPLUSDT",
       "BTCUSDT"
     ],
     "positions": [
       {
         "symbol": "BTCUSDT",
         "side": "long",
-        "size_usd": 415300.552,
-        "entry_price": 83846.71,
-        "current_price": 83942.69,
-        "pnl": 475.3979,
-        "usd": 415300.552,
+        "size_usd": 414202.4751,
+        "entry_price": 84016.98,
+        "current_price": 83960.17,
+        "pnl": -280.0725,
+        "usd": 414202.4751,
         "reconciled": true
       }
     ],
-    "running_pnl": 475.3979,
-    "realized_pnl": -2.1266,
-    "equity_pnl": -2.1266,
+    "running_pnl": -280.0725,
+    "realized_pnl": 0.9759,
+    "equity_pnl": 0.9759,
     "position_size_usd": 0.0,
     "executed_notional_usd": 0.0,
     "fees_usd": 0.0,
     "wallet": {
-      "BTCUSDT": 415832.6247,
-      "USDT": 407380.4092
+      "BTCUSDT": 414014.559,
+      "USDT": 409277.5568
     },
-    "wallet_usd": 823213.0339,
-    "balance_change_usd": -17.6064,
-    "drawdown_pct": 0.001921,
+    "wallet_usd": 823292.1158,
+    "balance_change_usd": -17.8527,
+    "drawdown_pct": 0.003715,
     "mode": "paper",
     "memory_summary": [
       {
         "decision": "HOLD",
-        "confidence": 0.306,
+        "confidence": 0.413,
         "executed": false,
-        "running_pnl": 715.8385,
+        "running_pnl": -252.8071,
         "engine": "weighted_fallback",
         "fallback_decision": "HOLD"
       },
       {
         "decision": "HEDGE_CRYPTO",
-        "confidence": 0.6,
+        "confidence": 0.68,
         "executed": true,
-        "running_pnl": 468.1663,
+        "running_pnl": -275.882,
         "engine": "groq",
         "fallback_decision": "HOLD"
       },
       {
         "decision": "HOLD",
-        "confidence": 0.7,
+        "confidence": 0.404,
         "executed": false,
-        "running_pnl": 540.3329,
-        "engine": "groq",
+        "running_pnl": -279.1851,
+        "engine": "weighted_fallback",
         "fallback_decision": "HOLD"
       }
     ],
-    "wake_reason": "",
-    "reasoning": "Price divergence indicates crypto is outperforming rToken, so no action is needed."
+    "wake_reason": "divergence",
+    "reasoning": "vote +0.207 from price +0.41*0.5 [divergence +2.052% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.01*0.2 [sentiment neutral (0.51)] -> HOLD"
+  },
+  {
+    "timestamp": "2026-09-25T20:12:39.212912+00:00",
+    "signal_inputs": {
+      "price": {
+        "signal": "DIVERGENCE_DETECTED",
+        "direction": "RTOKEN_OUTPERFORMING",
+        "divergence_score": 0.01992,
+        "rtoken_change": 0.01516,
+        "crypto_change": -0.00476,
+        "rtoken_last": "340.86",
+        "crypto_last": "83974.48",
+        "selected_rtoken": "RAAPLUSDT",
+        "basket_scores": {
+          "RAAPLUSDT": 0.01992,
+          "RNVDAUSDT": 0.00797,
+          "RTSLAUSDT": -0.00899
+        }
+      },
+      "event": {
+        "signal": "BEARISH",
+        "confidence": 0.235,
+        "reason": "rss headlines over 3545 chars"
+      },
+      "sentiment": {
+        "sentiment": "neutral",
+        "score": 0.506,
+        "reason": "funding z +0.56 (91 obs) + basis -4.8bps"
+      }
+    },
+    "decision": {
+      "decision": "HOLD",
+      "confidence": 0.403,
+      "reasoning": "vote +0.202 from price +0.40*0.5 [divergence +1.992% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.01*0.2 [sentiment neutral (0.51)] -> HOLD",
+      "scores": {
+        "price": 0.3984,
+        "event": -0.0,
+        "sentiment": 0.012,
+        "final": 0.2016
+      },
+      "engine_used": "weighted_fallback",
+      "fallback_reason": "Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kk5cbpdweeavcf35rqwkmfhj` service tier `on_dem",
+      "fallback_decision": "HOLD",
+      "fallback_agree": true
+    },
+    "risk": {
+      "approved": true,
+      "decision": "HOLD",
+      "blocked_reason": ""
+    },
+    "action_taken": {
+      "executed": false,
+      "order_id": "",
+      "details": "not attempted"
+    },
+    "symbols": [
+      "RAAPLUSDT",
+      "BTCUSDT"
+    ],
+    "positions": [
+      {
+        "symbol": "BTCUSDT",
+        "side": "long",
+        "size_usd": 414202.4751,
+        "entry_price": 84016.98,
+        "current_price": 83974.48,
+        "pnl": -209.5244,
+        "usd": 414202.4751,
+        "reconciled": true
+      }
+    ],
+    "running_pnl": -209.5244,
+    "realized_pnl": 0.9759,
+    "equity_pnl": 0.9759,
+    "position_size_usd": 0.0,
+    "executed_notional_usd": 0.0,
+    "fees_usd": 0.0,
+    "wallet": {
+      "BTCUSDT": 414079.0968,
+      "USDT": 409277.5568
+    },
+    "wallet_usd": 823356.6536,
+    "balance_change_usd": 64.5378,
+    "drawdown_pct": 0.003547,
+    "mode": "paper",
+    "memory_summary": [
+      {
+        "decision": "HEDGE_CRYPTO",
+        "confidence": 0.68,
+        "executed": true,
+        "running_pnl": -275.882,
+        "engine": "groq",
+        "fallback_decision": "HOLD"
+      },
+      {
+        "decision": "HOLD",
+        "confidence": 0.404,
+        "executed": false,
+        "running_pnl": -279.1851,
+        "engine": "weighted_fallback",
+        "fallback_decision": "HOLD"
+      },
+      {
+        "decision": "HOLD",
+        "confidence": 0.414,
+        "executed": false,
+        "running_pnl": -280.0725,
+        "engine": "weighted_fallback",
+        "fallback_decision": "HOLD"
+      }
+    ],
+    "wake_reason": "divergence",
+    "reasoning": "vote +0.202 from price +0.40*0.5 [divergence +1.992% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.01*0.2 [sentiment neutral (0.51)] -> HOLD"
   }
 ]

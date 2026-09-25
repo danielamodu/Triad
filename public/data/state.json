@@ -1,45 +1,44 @@
 {
-  "timestamp": "2026-09-25T19:03:17.571570+00:00",
+  "timestamp": "2026-09-25T20:12:39.212912+00:00",
   "signal_inputs": {
     "price": {
-      "signal": "STABLE",
-      "direction": "CRYPTO_OUTPERFORMING",
-      "divergence_score": -0.01475,
-      "rtoken_change": -0.01918,
-      "crypto_change": -0.00443,
-      "rtoken_last": "371.83",
-      "crypto_last": "83942.69",
-      "selected_rtoken": "RTSLAUSDT",
+      "signal": "DIVERGENCE_DETECTED",
+      "direction": "RTOKEN_OUTPERFORMING",
+      "divergence_score": 0.01992,
+      "rtoken_change": 0.01516,
+      "crypto_change": -0.00476,
+      "rtoken_last": "340.86",
+      "crypto_last": "83974.48",
+      "selected_rtoken": "RAAPLUSDT",
       "basket_scores": {
-        "RAAPLUSDT": 0.01422,
-        "RNVDAUSDT": 0.00408,
-        "RTSLAUSDT": -0.01475
+        "RAAPLUSDT": 0.01992,
+        "RNVDAUSDT": 0.00797,
+        "RTSLAUSDT": -0.00899
       }
     },
     "event": {
       "signal": "BEARISH",
-      "confidence": 0.25,
-      "reason": "rss headlines over 3531 chars"
+      "confidence": 0.235,
+      "reason": "rss headlines over 3545 chars"
     },
     "sentiment": {
       "sentiment": "neutral",
-      "score": 0.487,
-      "reason": "funding z +0.56 (91 obs) + basis -3.5bps"
+      "score": 0.506,
+      "reason": "funding z +0.56 (91 obs) + basis -4.8bps"
     }
   },
   "decision": {
     "decision": "HOLD",
-    "confidence": 0.7,
-    "reasoning": "Price divergence indicates crypto is outperforming rToken, so no action is needed.",
-    "dominant_signal": "price_divergence",
+    "confidence": 0.403,
+    "reasoning": "vote +0.202 from price +0.40*0.5 [divergence +1.992% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.01*0.2 [sentiment neutral (0.51)] -> HOLD",
     "scores": {
-      "price": 0.0,
+      "price": 0.3984,
       "event": -0.0,
-      "sentiment": -0.026,
-      "final": -0.0052
+      "sentiment": 0.012,
+      "final": 0.2016
     },
-    "engine_used": "groq",
-    "latency_ms": 990.0,
+    "engine_used": "weighted_fallback",
+    "fallback_reason": "Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kk5cbpdweeavcf35rqwkmfhj` service tier `on_dem",
     "fallback_decision": "HOLD",
     "fallback_agree": true
   },
@@ -54,61 +53,61 @@
     "details": "not attempted"
   },
   "symbols": [
-    "RTSLAUSDT",
+    "RAAPLUSDT",
     "BTCUSDT"
   ],
   "positions": [
     {
       "symbol": "BTCUSDT",
       "side": "long",
-      "size_usd": 415300.552,
-      "entry_price": 83846.71,
-      "current_price": 83942.69,
-      "pnl": 475.3979,
-      "usd": 415300.552,
+      "size_usd": 414202.4751,
+      "entry_price": 84016.98,
+      "current_price": 83974.48,
+      "pnl": -209.5244,
+      "usd": 414202.4751,
       "reconciled": true
     }
   ],
-  "running_pnl": 475.3979,
-  "realized_pnl": -2.1266,
-  "equity_pnl": -2.1266,
+  "running_pnl": -209.5244,
+  "realized_pnl": 0.9759,
+  "equity_pnl": 0.9759,
   "position_size_usd": 0.0,
   "executed_notional_usd": 0.0,
   "fees_usd": 0.0,
   "wallet": {
-    "BTCUSDT": 415832.6247,
-    "USDT": 407380.4092
+    "BTCUSDT": 414079.0968,
+    "USDT": 409277.5568
   },
-  "wallet_usd": 823213.0339,
-  "balance_change_usd": -17.6064,
-  "drawdown_pct": 0.001921,
+  "wallet_usd": 823356.6536,
+  "balance_change_usd": 64.5378,
+  "drawdown_pct": 0.003547,
   "mode": "paper",
   "memory_summary": [
     {
+      "decision": "HEDGE_CRYPTO",
+      "confidence": 0.68,
+      "executed": true,
+      "running_pnl": -275.882,
+      "engine": "groq",
+      "fallback_decision": "HOLD"
+    },
+    {
       "decision": "HOLD",
-      "confidence": 0.306,
+      "confidence": 0.404,
       "executed": false,
-      "running_pnl": 715.8385,
+      "running_pnl": -279.1851,
       "engine": "weighted_fallback",
       "fallback_decision": "HOLD"
     },
     {
-      "decision": "HEDGE_CRYPTO",
-      "confidence": 0.6,
-      "executed": true,
-      "running_pnl": 468.1663,
-      "engine": "groq",
-      "fallback_decision": "HOLD"
-    },
-    {
       "decision": "HOLD",
-      "confidence": 0.7,
+      "confidence": 0.414,
       "executed": false,
-      "running_pnl": 540.3329,
-      "engine": "groq",
+      "running_pnl": -280.0725,
+      "engine": "weighted_fallback",
       "fallback_decision": "HOLD"
     }
   ],
-  "wake_reason": "",
-  "reasoning": "Price divergence indicates crypto is outperforming rToken, so no action is needed."
+  "wake_reason": "divergence",
+  "reasoning": "vote +0.202 from price +0.40*0.5 [divergence +1.992% (RTOKEN_OUTPERFORMING)], event -0.00*0.3 [event BEARISH (0.23)], sentiment +0.01*0.2 [sentiment neutral (0.51)] -> HOLD"
 }
