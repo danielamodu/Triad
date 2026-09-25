@@ -8,6 +8,8 @@ __pycache__/
 
 # Runtime data: trade logs, risk ledger, position book, manual halt flag
 logs/*.jsonl
+bot.log
+dash.log
 logs/risk_state.json
 logs/risk_state.json.tmp
 logs/positions.json
