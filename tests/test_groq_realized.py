@@ -94,6 +94,8 @@ def test_sync_positions_returns_realized():
 def _groq_tick(monkeypatch, tmp_path, verdict, cooldown=0):
     monkeypatch.setattr(config, "RISK_STATE_FILE",
                         os.path.join(str(tmp_path), "risk_state.json"))
+    monkeypatch.setattr(config, "POSITIONS_FILE",
+                        os.path.join(str(tmp_path), "positions.json"))
     monkeypatch.setattr(config, "GROQ_TRACE_FILE",
                         os.path.join(str(tmp_path), "groq.jsonl"))
     monkeypatch.setattr(main, "get_divergence",
@@ -157,6 +159,8 @@ def test_groq_trace_written_and_stripped_from_log(monkeypatch, tmp_path):
                "latency_ms": 12.5, "_prompt": "PROMPT", "_raw_response": "RAW"}
     monkeypatch.setattr(config, "RISK_STATE_FILE",
                         os.path.join(str(tmp_path), "risk_state.json"))
+    monkeypatch.setattr(config, "POSITIONS_FILE",
+                        os.path.join(str(tmp_path), "positions.json"))
     monkeypatch.setattr(main, "get_divergence",
                         lambda: {"signal": "STABLE", "direction": "FLAT",
                                  "divergence_score": 0.0, "rtoken_change": 0.0,
@@ -189,6 +193,8 @@ def test_groq_trace_written_and_stripped_from_log(monkeypatch, tmp_path):
 def test_tick_logs_equity_fields(monkeypatch, tmp_path):
     monkeypatch.setattr(config, "RISK_STATE_FILE",
                         os.path.join(str(tmp_path), "risk_state.json"))
+    monkeypatch.setattr(config, "POSITIONS_FILE",
+                        os.path.join(str(tmp_path), "positions.json"))
     st, _ = risk_state.load_state(
         os.path.join(str(tmp_path), "risk_state.json"))
     st["realized_pnl"] = -30.0

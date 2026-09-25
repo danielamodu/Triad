@@ -22,6 +22,7 @@ from src.execution.executor import execute, get_balance, get_positions, \
     size_for_confidence
 from src.logger import _read_entries, append_jsonl, append_log
 from src.risk import state as risk_state
+from src.risk import positions as position_book
 from src.risk.cage import validate
 from src.risk.state import iter_fills
 from src.signals.event_signal import get_event
@@ -544,22 +545,56 @@ def wake_reason(price: dict, event: dict, sentiment: dict) -> str:
 _RECONCILE_DUST_USD = 1.0
 
 
+def restore_positions(path: str = "") -> int:
+    """Reload persisted bot legs into OPEN_POSITIONS. Returns the count.
+
+    Runs before reconcile so a bot leg keeps its true entry price and
+    armed brackets across a restart instead of being re-adopted as
+    wallet inventory at the current mark. Only bot-opened legs are
+    persisted; adopted funds are rebuilt from the broker by
+    reconcile_startup. An unreadable book degrades to the old behavior
+    (rebuild everything from the broker). Never raises.
+    """
+    try:
+        book, ok = position_book.load_positions(path)
+    except Exception:
+        return 0
+    if not ok:
+        print("[triad] WARNING: position book unreadable; rebuilding "
+              "open legs from the broker snapshot.", flush=True)
+        return 0
+    restored = 0
+    try:
+        for symbol, leg in book.items():
+            if isinstance(leg, dict) and symbol not in OPEN_POSITIONS:
+                OPEN_POSITIONS[symbol] = leg
+                restored += 1
+    except Exception:
+        return restored
+    if restored:
+        print(f"[triad] restored {restored} open leg(s) from the "
+              f"position book.", flush=True)
+    return restored
+
+
 def reconcile_startup(live: bool) -> dict:
     """Resume-from-broker: adopt live balances into tracking on boot.
 
     Compares the broker snapshot against the persisted ledger and the
-    (always empty at boot) in-memory book. Broker balances above dust
-    with no tracked leg are adopted as long legs at the current mark
-    and seeded into the ledger (max of ledger/broker, so a restart can
-    only tighten the no-doubling gate, never loosen it). Resting open
+    in-memory book (bot legs restored just below). Broker balances above
+    dust with no tracked leg are adopted as long legs at the current
+    mark and seeded into the ledger (max of ledger/broker, so a restart
+    can only tighten the no-doubling gate, never loosen it). Resting open
     orders are reported, never touched.
 
-    In-memory state from a previous process is never trusted: this is
-    the only writer of OPEN_POSITIONS outside tick fills. Returns a
-    report dict; prints it. Never raises.
+    Bot-opened legs are restored first from the persisted position book
+    (true entry price + armed brackets survive the restart); this
+    reconcile then adopts only broker balances not already covered by a
+    restored leg. Returns a report dict; prints it. Never raises.
     """
     report: dict = {"mode": "live" if live else "paper", "adopted": [],
                     "open_orders": [], "warnings": []}
+    restore_positions()
     try:
         price = safe("price", get_divergence, fallback={
             "signal": "STABLE", "direction": "FLAT", "divergence_score": 0.0,
@@ -852,6 +887,12 @@ def tick(live: bool = False) -> dict:
                                  risk.get("decision", ""))
     realized_total = risk_state.add_realized(rstate, closed_pnl)
     _update_positions(price)
+    # Persist bot legs so brackets + true entry survive a restart (a
+    # save failure only risks losing recovery, so it warns, never fails
+    # the cage closed the way a risk-ledger failure does).
+    if not position_book.save_positions(OPEN_POSITIONS):
+        print("[triad] WARNING: position book save failed; open legs "
+              "may not survive a restart.", flush=True)
     running_pnl = _running_pnl()
     # Profit card basis: bot-attributed all-time P&L (realized closes +
     # unrealized on bot-opened legs). Adopted wallet drift is excluded so
@@ -993,6 +1034,12 @@ def main() -> int:
                             "mode": "live" if live else "paper",
                             "memory_summary": _memory_context(3),
                             "reasoning": traceback.format_exc()[-500:]})
+            except Exception:
+                pass
+            try:
+                # A tick can crash after fills mutated the book; persist
+                # what we have so a restart still recovers the legs.
+                position_book.save_positions(OPEN_POSITIONS)
             except Exception:
                 pass
             summary = {"diverged": False, "wake_reason": ""}

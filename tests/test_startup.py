@@ -10,6 +10,8 @@ from src.risk import state as risk_state
 def _boot(monkeypatch, tmp_path, snapshot, opens=None, state_ok=True):
     monkeypatch.setattr(config, "RISK_STATE_FILE",
                         os.path.join(str(tmp_path), "risk_state.json"))
+    monkeypatch.setattr(config, "POSITIONS_FILE",
+                        os.path.join(str(tmp_path), "positions.json"))
     # Isolated trade log: the adopted-baseline repair reads fill history,
     # which must not leak in from the developer's real log file.
     log_target = os.path.join(str(tmp_path), "trades.jsonl")

@@ -16,7 +16,7 @@ call logged and inspectable. Live on EC2, dashboard on Vercel.
   Profit: `/equity` · Safety: `/risk`
 - Verify in 30 seconds:
   `git clone https://github.com/danielamodu/Triad && cd Triad && python -m pytest tests -q`
-  (120 tests, stdlib + pytest only)
+  (131 tests, stdlib + pytest only)
 
 Live snapshot (2026-09-16 21:51 UTC, paper):
 
@@ -208,9 +208,12 @@ pick. Safety check passed = safety limits approved the pick.
 8. Order settlement: one retry on retryable errors (same `triad-`
    client ID, so no duplicates); partial fills cancel the remainder and
    book what filled; broker-confirmed zero fills report NO_FILL.
-9. Boot reconciles from the broker: unknown balances are adopted into
-   tracking and seeded into the ledger (never the reverse); resting
-   open orders (dashboard: **open**) are reported, never touched.
+9. Boot reconciles from the broker: bot-opened legs are first restored
+   from the persisted position book (`logs/positions.json`, atomic
+   writes) so their true entry price and armed brackets survive a
+   restart; only balances not already covered by a restored leg are
+   adopted into tracking and seeded into the ledger (never the reverse);
+   resting open orders (dashboard: **open**) are reported, never touched.
 10. Displayed profit is bot-attributed all-time P&L: realized closes
     plus unrealized on bot-opened legs only (`equity_pnl`, dashboard:
     **profit** / **profit so far**; adopted wallet drift excluded).
@@ -222,13 +225,14 @@ pick. Safety check passed = safety limits approved the pick.
     verdict carries its backup-rules agreement and answer speed
     (`latency_ms`), and 5 consecutive AI-vs-backup disagreements force
     the backup rules for 10 ticks (drift breaker).
-12. `python -m pytest tests` — 120 tests covering ledger math, safety
-    gates, live routing, validation, settlement, startup, and tick
-    wiring.
+12. `python -m pytest tests` — 131 tests covering ledger math, safety
+    gates, live routing, validation, settlement, startup, position
+    persistence, and tick wiring.
 13. Per-leg brackets (bot-opened legs only): −2% stop / +3% take from
     entry flattens the book via EXIT on the next tick. EXIT passes entry
-    halts by design so a stop is never trapped; starting values,
-    uncalibrated.
+    halts by design so a stop is never trapped; brackets and true entry
+    survive a restart via the persisted position book (point 9);
+    starting values, uncalibrated.
 
 ## Notes
 

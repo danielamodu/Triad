@@ -6,10 +6,12 @@ __pycache__/
 # Secrets (never commit live keys)
 .env
 
-# Runtime data: trade logs, risk ledger, manual halt flag
+# Runtime data: trade logs, risk ledger, position book, manual halt flag
 logs/*.jsonl
 logs/risk_state.json
 logs/risk_state.json.tmp
+logs/positions.json
+logs/positions.json.tmp
 logs/KILL
 
 # Backtest cache + reports (regenerate with python -m backtest.harness)

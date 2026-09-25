@@ -191,6 +191,8 @@ def test_sync_positions_prefers_fill_price():
 def _live_tick(monkeypatch, tmp_path, live):
     monkeypatch.setattr(config, "RISK_STATE_FILE",
                         os.path.join(str(tmp_path), "risk_state.json"))
+    monkeypatch.setattr(config, "POSITIONS_FILE",
+                        os.path.join(str(tmp_path), "positions.json"))
     monkeypatch.setattr(main, "get_divergence",
                         lambda: {"signal": "STABLE", "direction": "FLAT",
                                  "divergence_score": 0.0, "rtoken_change": 0.0,
@@ -232,6 +234,8 @@ def test_tick_threads_live_into_broker_and_executor(monkeypatch, tmp_path):
     seen = {}
     monkeypatch.setattr(config, "RISK_STATE_FILE",
                         os.path.join(str(tmp_path), "risk_state.json"))
+    monkeypatch.setattr(config, "POSITIONS_FILE",
+                        os.path.join(str(tmp_path), "positions.json"))
     monkeypatch.setattr(main, "get_divergence",
                         lambda: {"signal": "STABLE", "direction": "FLAT",
                                  "divergence_score": 0.0, "rtoken_change": 0.0,

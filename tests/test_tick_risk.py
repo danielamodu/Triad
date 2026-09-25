@@ -12,6 +12,8 @@ def _quiet_tick(monkeypatch, tmp_path, decide_result, execute_result=None,
     """Run main.tick() fully mocked; return the logged entry."""
     monkeypatch.setattr(config, "RISK_STATE_FILE",
                         os.path.join(str(tmp_path), "risk_state.json"))
+    monkeypatch.setattr(config, "POSITIONS_FILE",
+                        os.path.join(str(tmp_path), "positions.json"))
     monkeypatch.setattr(main, "get_divergence",
                         lambda: {"signal": "STABLE", "direction": "FLAT",
                                  "divergence_score": 0.0, "rtoken_change": 0.0,
@@ -84,6 +86,24 @@ def test_tick_persists_fills_to_state_file(monkeypatch, tmp_path):
     assert loaded["exposure"] == {"RAAPLUSDT": 500.0}
 
 
+def test_tick_persists_open_leg_for_restart(monkeypatch, tmp_path):
+    fill = {"executed": True, "order_id": "11", "symbol": "RAAPLUSDT",
+            "side": "buy", "notional_usdt": 500.0, "fill_price": 100.0,
+            "details": {"symbol": "RAAPLUSDT", "side": "buy",
+                        "notional_usdt": 500.0, "fill_price": 100.0,
+                        "executed": True}}
+    _quiet_tick(monkeypatch, tmp_path,
+                {"decision": "LONG_RTOKEN", "confidence": 0.7,
+                 "reasoning": "t", "scores": {}, "engine_used": "test"},
+                fill)
+    from src.risk import positions as position_book
+    book, ok = position_book.load_positions(
+        os.path.join(str(tmp_path), "positions.json"))
+    assert ok is True
+    assert book["RAAPLUSDT"]["entry_price"] == 100.0
+    assert book["RAAPLUSDT"]["side"] == "long"
+
+
 def test_tick_fails_closed_on_corrupt_state(monkeypatch, tmp_path):
     target = os.path.join(str(tmp_path), "risk_state.json")
     with open(target, "w", encoding="utf-8") as fh:
@@ -100,6 +120,8 @@ def test_tick_fails_closed_on_corrupt_state(monkeypatch, tmp_path):
 def test_tick_halts_after_repeated_broker_failures(monkeypatch, tmp_path):
     monkeypatch.setattr(config, "RISK_STATE_FILE",
                         os.path.join(str(tmp_path), "risk_state.json"))
+    monkeypatch.setattr(config, "POSITIONS_FILE",
+                        os.path.join(str(tmp_path), "positions.json"))
     monkeypatch.setattr(main, "get_divergence",
                         lambda: {"signal": "STABLE", "direction": "FLAT",
                                  "divergence_score": 0.0, "rtoken_change": 0.0,
@@ -193,6 +215,8 @@ def _wake_summary(monkeypatch, tmp_path, price, event, sentiment):
     """Run main.tick() with fixed signals; return tick()'s summary dict."""
     monkeypatch.setattr(config, "RISK_STATE_FILE",
                         os.path.join(str(tmp_path), "risk_state.json"))
+    monkeypatch.setattr(config, "POSITIONS_FILE",
+                        os.path.join(str(tmp_path), "positions.json"))
     monkeypatch.setattr(main, "get_divergence", lambda: dict(price))
     monkeypatch.setattr(main, "get_event", lambda: dict(event))
     monkeypatch.setattr(main, "get_sentiment", lambda: dict(sentiment))
@@ -267,6 +291,8 @@ def test_exit_fires_both_legs_simultaneously(monkeypatch, tmp_path):
     calls = []
     monkeypatch.setattr(config, "RISK_STATE_FILE",
                         os.path.join(str(tmp_path), "risk_state.json"))
+    monkeypatch.setattr(config, "POSITIONS_FILE",
+                        os.path.join(str(tmp_path), "positions.json"))
     monkeypatch.setattr(main, "get_divergence", lambda: dict(CALM_PRICE))
     monkeypatch.setattr(main, "get_event", lambda: dict(CALM_EVENT))
     monkeypatch.setattr(main, "get_sentiment", lambda: dict(CALM_SENT))
@@ -346,6 +372,8 @@ def test_bracket_ignores_adopted_inventory():
 def test_bracket_breach_forces_exit(monkeypatch, tmp_path):
     monkeypatch.setattr(config, "RISK_STATE_FILE",
                         os.path.join(str(tmp_path), "risk_state.json"))
+    monkeypatch.setattr(config, "POSITIONS_FILE",
+                        os.path.join(str(tmp_path), "positions.json"))
     # Signal marks the bot leg 3% under its entry: the tick's own price
     # refresh trips the stop (marks always come from the feed, never test
     # fixtures sitting in the book).

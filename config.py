@@ -71,6 +71,9 @@ RISK_MAX_DRAWDOWN_PCT = 0.05
 RISK_MAX_DAILY_LOSS_PCT = 0.02  # halt new trading for the rest of the UTC day
 RISK_BROKER_FAIL_TICKS = 3  # consecutive failed broker snapshots -> halt
 RISK_STATE_FILE = os.path.join(BASE_DIR, "logs", "risk_state.json")
+# Persisted bot position book (open legs survive a restart so per-leg
+# brackets stay armed and true entry prices are not lost to reconcile).
+POSITIONS_FILE = os.path.join(BASE_DIR, "logs", "positions.json")
 RISK_MAX_PRICE_DRIFT_PCT = 0.01  # abort if mark moved >1% since the signal
 # Per-leg brackets (bot-opened legs only; adopted inventory excluded).
 # A breach flattens the book via EXIT on the next tick. Starting values,
